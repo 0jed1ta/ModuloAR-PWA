@@ -1,0 +1,29 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: dark;
+  color: #e8e2cf;
+  background-color: #0b1220;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.arranque {
+  max-width: 32em;
+  padding: 2em;
+}
+
+.arranque h1 {
+  font-size: 1.6em;
+  margin-bottom: 0.4em;
+}
+
+.arranque p {
+  color: #9a9a8c;
+}

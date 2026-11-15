@@ -7,6 +7,7 @@ import { hayOrientacionReal, iniciarControlOrientacion, pedirPermisoOrientacion,
 import { describirErrorCamara, detenerCamaraDeFondo, iniciarCamaraDeFondo } from "./camara";
 import { estadoAvisos, pedirPermisoAvisos, mostrarAviso } from "./avisos";
 import { descargarPendientes, ETIQUETA_SYNC } from "./descargas";
+import { diagnosticarAR, mensajeSoporteAR, pedirSesionAR, describirErrorAR } from "./xr";
 
 const MODELOS_DEMO = [
   { id: "modelo-demo-1", nombre: "Patrón MVC" },
@@ -50,9 +51,12 @@ function render() {
           <button id="btn-orientacion">📱 Rotar con el teléfono</button>
           <button id="btn-calibrar" class="btn-favorito" disabled>Calibrar</button>
           <button id="btn-camara" class="btn-favorito">📷 Activar cámara</button>
+          <button id="btn-ar" class="btn-favorito" disabled>🥽 Ver en AR</button>
           <span id="lectura-visor" class="lectura-visor"></span>
         </div>
         <p id="aviso-visor" class="aviso-visor" hidden></p>
+        <details class="diagnostico-ar"><summary>Diagnóstico de realidad aumentada</summary><pre id="diag-ar"></pre></details>
+        <div id="xr-overlay" class="xr-overlay" hidden><button id="btn-salir-ar">Salir de AR</button></div>
       </section>
       <section class="descargas-zona" aria-label="Uso sin conexión">
         <h2>Uso sin conexión</h2>
@@ -87,6 +91,7 @@ function render() {
 
   configurarVisor();
   configurarDescargas();
+  configurarAR();
 
   appEl.querySelectorAll<HTMLButtonElement>(".btn-visitar").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -155,6 +160,41 @@ function configurarDescargas() {
       if (!enSegundoPlano) { await descargarPendientes(db, pintarProgreso); mensaje.textContent = "✓ Fichas disponibles sin conexión."; }
     } catch (error) { mensaje.textContent = `No se pudo completar la descarga: ${error instanceof Error ? error.message : String(error)}`; } finally { descargar.disabled = false; }
   });
+}
+
+function configurarAR() {
+  const boton = document.querySelector<HTMLButtonElement>("#btn-ar");
+  const estado = document.querySelector<HTMLElement>("#aviso-visor");
+  const diagnostico = document.querySelector<HTMLElement>("#diag-ar");
+  const detalles = document.querySelector<HTMLDetailsElement>(".diagnostico-ar");
+  const overlay = document.querySelector<HTMLElement>("#xr-overlay");
+  const salir = document.querySelector<HTMLButtonElement>("#btn-salir-ar");
+  if (!boton || !estado || !diagnostico || !detalles || !overlay || !salir || !visor) return;
+  let sesion: XRSession | null = null;
+  const comprobar = async () => {
+    const resultado = await diagnosticarAR();
+    diagnostico.textContent = resultado.lineas.join("\n");
+    if (!sesion) boton.disabled = resultado.estado !== "disponible";
+    estado.textContent = mensajeSoporteAR(resultado.estado);
+    estado.hidden = false;
+    detalles.open = resultado.estado !== "disponible";
+  };
+  void comprobar();
+  boton.addEventListener("click", async () => {
+    if (!visor || sesion) return;
+    if (camaraStream) { detenerCamaraDeFondo(document.querySelector<HTMLVideoElement>("#camara-fondo")!, camaraStream); camaraStream = null; }
+    try {
+      const nueva = await pedirSesionAR(overlay);
+      sesion = nueva; boton.disabled = true; overlay.hidden = false;
+      await visor.entrarEnAR(nueva, () => { sesion = null; overlay.hidden = true; boton.disabled = false; estado.textContent = "La sesión de realidad aumentada terminó."; estado.hidden = false; });
+      estado.textContent = nueva.domOverlayState ? "Sesión de realidad aumentada activa. Usa Salir de AR para terminar." : "Sesión AR activa. Usa el gesto de salida del sistema para terminar.";
+      estado.hidden = false;
+    } catch (error) {
+      if (sesion) await sesion.end().catch(() => undefined);
+      sesion = null; overlay.hidden = true; boton.disabled = false; estado.textContent = describirErrorAR(error); estado.hidden = false;
+    }
+  });
+  salir.addEventListener("click", () => { void sesion?.end(); });
 }
 
 function configurarVisor() {

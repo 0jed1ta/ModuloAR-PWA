@@ -12,6 +12,7 @@ export async function pedirPermisoAvisos(): Promise<EstadoAvisos> {
 export async function mostrarAviso(titulo: string, cuerpo: string, url = "/", tag = "atlas-aviso"): Promise<boolean> {
   if (estadoAvisos() !== "granted") return false;
   const registro = await navigator.serviceWorker.ready;
-  await registro.showNotification(titulo, { body: cuerpo, icon: "/iconos/icon-192.png", tag, data: { url } });
+  const base = import.meta.env.BASE_URL;
+  await registro.showNotification(titulo, { body: cuerpo, icon: `${base}iconos/icon-192.png`, tag, data: { url } });
   return true;
 }

@@ -5,15 +5,18 @@ export interface Visor {
   rotarHacia(rotX: number, rotY: number): void;
   controlPorSensores(activo: boolean): void;
   rotacionActualGrados(): { x: number; y: number };
+  fondoTransparente(activo: boolean): void;
   destruir(): void;
 }
 
 export function crearVisor(contenedor: HTMLElement): Visor {
   const escena = new THREE.Scene();
-  escena.background = new THREE.Color(0x0b1220);
+  const colorFondo = new THREE.Color(0x0b1220);
+  escena.background = colorFondo;
   const camara = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
   camara.position.set(0, 0, 4);
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   contenedor.append(renderer.domElement);
   escena.add(new THREE.AmbientLight(0xffffff, 0.6));
@@ -55,6 +58,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     rotarHacia(x, y) { objetivoX = x; objetivoY = y; },
     controlPorSensores(activo) { porSensores = activo; controles.enabled = !activo; if (!activo) grupo.rotation.set(0, 0, 0); },
     rotacionActualGrados() { return { x: aGrados(grupo.rotation.x), y: aGrados(grupo.rotation.y) }; },
+    fondoTransparente(activo) { escena.background = activo ? null : colorFondo; },
     destruir() { cancelAnimationFrame(animacion); window.removeEventListener("resize", ajustarTamano); controles.dispose(); renderer.dispose(); renderer.domElement.remove(); },
   };
 }

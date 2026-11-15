@@ -2,6 +2,8 @@ import "./style.css";
 import { abrirBaseDeDatos, alternarFavorito, guardarNotaDeEstudio, marcarModeloVisto, obtenerTodoElProgreso, type ProgresoModelo } from "./db";
 import { cifrarTexto, descifrarTexto, derivarClaveDesdeContrasena, obtenerOCrearSal } from "./crypto";
 import { registerSW } from "virtual:pwa-register";
+import { crearVisor, type Visor } from "./visor";
+import { hayOrientacionReal, iniciarControlOrientacion, pedirPermisoOrientacion, type ControlOrientacion } from "./sensores";
 
 const MODELOS_DEMO = [
   { id: "modelo-demo-1", nombre: "Patrón MVC" },
@@ -13,6 +15,9 @@ const appEl = document.querySelector<HTMLDivElement>("#app")!;
 let db: IDBDatabase;
 let claveSesion: CryptoKey | null = null;
 let progresoPorId = new Map<string, ProgresoModelo>();
+let visor: Visor | null = null;
+let controlOrientacion: ControlOrientacion | null = null;
+let lecturaTimer = 0;
 
 async function obtenerClaveSesion(): Promise<CryptoKey | null> {
   if (claveSesion) return claveSesion;
@@ -30,10 +35,19 @@ function render() {
   appEl.innerHTML = `
     <main class="atlas-demo">
       <header class="atlas-header">
-        <p class="eyebrow">Atlas 3D · Sesión 33</p>
-        <h1>Progreso de modelos</h1>
-        <p>Registra visitas, favoritos y notas privadas en tu dispositivo.</p>
+        <p class="eyebrow">Atlas 3D · Sesión 35</p>
+        <h1>Visor 3D y progreso</h1>
+        <p>Explora el modelo con el ratón o mueve el teléfono para cambiar su orientación.</p>
       </header>
+      <section class="visor-panel" aria-label="Visor 3D">
+        <div id="visor" class="visor-canvas"></div>
+        <div class="visor-controls">
+          <button id="btn-orientacion">📱 Rotar con el teléfono</button>
+          <button id="btn-calibrar" class="btn-favorito" disabled>Calibrar</button>
+          <span id="lectura-visor" class="lectura-visor"></span>
+        </div>
+        <p id="aviso-visor" class="aviso-visor" hidden></p>
+      </section>
       <section class="modelos-grid" aria-label="Modelos de demostración">
         ${MODELOS_DEMO.map((modelo) => {
           const progreso = progresoPorId.get(modelo.id);
@@ -59,6 +73,8 @@ function render() {
       </section>
     </main>
   `;
+
+  configurarVisor();
 
   appEl.querySelectorAll<HTMLButtonElement>(".btn-visitar").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -100,6 +116,48 @@ function render() {
       }
     });
   });
+}
+
+function configurarVisor() {
+  controlOrientacion?.detener();
+  window.clearInterval(lecturaTimer);
+  visor?.destruir();
+  const contenedor = document.querySelector<HTMLElement>("#visor");
+  const boton = document.querySelector<HTMLButtonElement>("#btn-orientacion");
+  const calibrar = document.querySelector<HTMLButtonElement>("#btn-calibrar");
+  const lectura = document.querySelector<HTMLElement>("#lectura-visor");
+  const aviso = document.querySelector<HTMLElement>("#aviso-visor");
+  if (!contenedor || !boton || !calibrar || !lectura || !aviso) return;
+  visor = crearVisor(contenedor);
+  controlOrientacion = null;
+  boton.addEventListener("click", async () => {
+    if (controlOrientacion) {
+      controlOrientacion.detener();
+      controlOrientacion = null;
+      visor?.controlPorSensores(false);
+      window.clearInterval(lecturaTimer);
+      calibrar.disabled = true;
+      lectura.textContent = "";
+      boton.textContent = "📱 Rotar con el teléfono";
+      return;
+    }
+    const permiso = await pedirPermisoOrientacion();
+    if (permiso === "denied" || permiso === "no-soportado" || !(await hayOrientacionReal())) {
+      aviso.textContent = permiso === "denied" ? "Denegaste el acceso a los sensores. Usa el control manual." : "Este dispositivo no tiene sensores de orientación. Usa el ratón o el dedo.";
+      aviso.hidden = false;
+      return;
+    }
+    aviso.hidden = true;
+    visor?.controlPorSensores(true);
+    controlOrientacion = iniciarControlOrientacion((x, y) => visor?.rotarHacia(x, y));
+    calibrar.disabled = false;
+    boton.textContent = "📱 Sensores activos (toca para apagar)";
+    lecturaTimer = window.setInterval(() => {
+      const actual = visor?.rotacionActualGrados();
+      if (actual) lectura.textContent = `Rotación X ${actual.x}° · Y ${actual.y}°`;
+    }, 150);
+  });
+  calibrar.addEventListener("click", () => controlOrientacion?.calibrar());
 }
 
 async function iniciar() {

@@ -1,6 +1,7 @@
 import "./style.css";
 import { abrirBaseDeDatos, alternarFavorito, guardarNotaDeEstudio, marcarModeloVisto, obtenerTodoElProgreso, type ProgresoModelo } from "./db";
 import { cifrarTexto, descifrarTexto, derivarClaveDesdeContrasena, obtenerOCrearSal } from "./crypto";
+import { registerSW } from "virtual:pwa-register";
 
 const MODELOS_DEMO = [
   { id: "modelo-demo-1", nombre: "Patrón MVC" },
@@ -110,5 +111,13 @@ async function iniciar() {
 iniciar();
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").catch((error: unknown) => console.error("Error al registrar SW:", error));
+  registerSW({
+    immediate: true,
+    onRegisteredSW(swUrl, registration) {
+      console.log("SW de Workbox registrado:", swUrl, registration);
+    },
+    onRegisterError(error) {
+      console.error("Error al registrar el SW de Workbox:", error);
+    },
+  });
 }

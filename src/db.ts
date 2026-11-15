@@ -1,5 +1,5 @@
 const NOMBRE_DB = "atlas3d-progreso-db";
-const VERSION_DB = 1;
+const VERSION_DB = 2;
 
 export interface ProgresoModelo {
   modeloId: string;
@@ -14,12 +14,41 @@ export function abrirBaseDeDatos(): Promise<IDBDatabase> {
     const peticion = indexedDB.open(NOMBRE_DB, VERSION_DB);
     peticion.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
-      const store = db.createObjectStore("progreso", { keyPath: "modeloId" });
-      store.createIndex("porFavorito", "favorito", { unique: false });
-      store.createIndex("porUltimaVisita", "ultimaVisita", { unique: false });
+      if (event.oldVersion < 1) {
+        const store = db.createObjectStore("progreso", { keyPath: "modeloId" });
+        store.createIndex("porFavorito", "favorito", { unique: false });
+        store.createIndex("porUltimaVisita", "ultimaVisita", { unique: false });
+      }
+      if (event.oldVersion < 2) db.createObjectStore("descargas", { keyPath: "modeloId" });
     };
-    peticion.onsuccess = (event) => resolve((event.target as IDBOpenDBRequest).result);
+    peticion.onsuccess = (event) => {
+      const base = (event.target as IDBOpenDBRequest).result;
+      base.onversionchange = () => base.close();
+      resolve(base);
+    };
     peticion.onerror = (event) => reject((event.target as IDBOpenDBRequest).error);
+  });
+}
+
+export interface Descarga { modeloId: string; estado: "pendiente" | "listo"; }
+export function encolarDescargas(db: IDBDatabase, ids: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("descargas", "readwrite");
+    ids.forEach((modeloId) => tx.objectStore("descargas").put({ modeloId, estado: "pendiente" } satisfies Descarga));
+    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
+  });
+}
+export function obtenerDescargas(db: IDBDatabase): Promise<Descarga[]> {
+  return new Promise((resolve, reject) => {
+    const request = db.transaction("descargas", "readonly").objectStore("descargas").getAll();
+    request.onsuccess = () => resolve(request.result as Descarga[]); request.onerror = () => reject(request.error);
+  });
+}
+export function marcarDescargaLista(db: IDBDatabase, modeloId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("descargas", "readwrite");
+    tx.objectStore("descargas").put({ modeloId, estado: "listo" } satisfies Descarga);
+    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
   });
 }
 

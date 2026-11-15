@@ -85,6 +85,12 @@ body {
   width: 100%;
 }
 
+.descargas-zona { margin: 0 0 1.5rem; padding: 1.1rem 1.2rem; border: 1px solid #263750; border-radius: 18px; background: #101a2c; }
+.descargas-zona h2 { margin: 0 0 .8rem; color: #f5f0df; font-size: 1.15rem; }
+.descargas-barra { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
+.descargas-barra span, #estado-descarga { color: #aab3c3; font-size: .9rem; }
+#progreso-descarga { width: 100%; height: .7rem; margin-top: .9rem; accent-color: #4e96d1; }
+
 .visor-controls {
   display: flex;
   align-items: center;

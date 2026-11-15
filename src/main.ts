@@ -186,8 +186,8 @@ function configurarAR() {
     try {
       const nueva = await pedirSesionAR(overlay);
       sesion = nueva; boton.disabled = true; overlay.hidden = false;
-      await visor.entrarEnAR(nueva, () => { sesion = null; overlay.hidden = true; boton.disabled = false; estado.textContent = "La sesión de realidad aumentada terminó."; estado.hidden = false; });
-      estado.textContent = nueva.domOverlayState ? "Sesión de realidad aumentada activa. Usa Salir de AR para terminar." : "Sesión AR activa. Usa el gesto de salida del sistema para terminar.";
+      await visor.entrarEnAR(nueva, { overlay, alCambiar: (actual) => { diagnostico.textContent = `hit-test: ${actual.hitTest ? "sí" : "no"} · anclas: ${actual.anclas ? "sí" : "no"} · fase: ${actual.fase} · anclado: ${actual.anclado ? "sí" : "no"}`; }, alTerminar: () => { sesion = null; overlay.hidden = true; boton.disabled = false; estado.textContent = "La sesión de realidad aumentada terminó."; estado.hidden = false; } });
+      estado.textContent = nueva.domOverlayState ? "Sesión de realidad aumentada activa. Busca una superficie y toca para colocar." : "Sesión AR activa. Usa el gesto de salida del sistema para terminar.";
       estado.hidden = false;
     } catch (error) {
       if (sesion) await sesion.end().catch(() => undefined);

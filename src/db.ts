@@ -1,5 +1,13 @@
+
 const NOMBRE_DB = "atlas3d-progreso-db";
-const VERSION_DB = 2;
+const VERSION_DB = 3;
+
+/** Sesión 40: correspondencia entre los identificadores viejos y los nuevos. */
+export const RENOMBRES_V3: Record<string, string> = {
+  "modelo-demo-1": "mvc",
+  "modelo-demo-2": "capas",
+  "modelo-demo-3": "microservicios",
+};
 
 export interface ProgresoModelo {
   modeloId: string;
@@ -9,9 +17,24 @@ export interface ProgresoModelo {
   notaIv: Uint8Array | null;
 }
 
+/** Reescribe los registros con identificador viejo. En «descargas» vuelven a «pendiente»: la caché de modelos aún no tiene los archivos nuevos. */
+function migrarIdentificadores(store: IDBObjectStore, reiniciarDescarga: boolean) {
+  for (const [viejo, nuevo] of Object.entries(RENOMBRES_V3)) {
+    const lectura = store.get(viejo);
+    lectura.onsuccess = () => {
+      const registro = lectura.result;
+      if (!registro) return;
+      store.delete(viejo);
+      store.put({ ...registro, modeloId: nuevo, ...(reiniciarDescarga ? { estado: "pendiente" } : {}) });
+    };
+  }
+}
+
+/** Abre (o crea) la base de datos de progreso. */
 export function abrirBaseDeDatos(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const peticion = indexedDB.open(NOMBRE_DB, VERSION_DB);
+
     peticion.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (event.oldVersion < 1) {
@@ -19,49 +42,35 @@ export function abrirBaseDeDatos(): Promise<IDBDatabase> {
         store.createIndex("porFavorito", "favorito", { unique: false });
         store.createIndex("porUltimaVisita", "ultimaVisita", { unique: false });
       }
-      if (event.oldVersion < 2) db.createObjectStore("descargas", { keyPath: "modeloId" });
+      if (event.oldVersion < 2) {
+        db.createObjectStore("descargas", { keyPath: "modeloId" });
+      }
+      if (event.oldVersion >= 1 && event.oldVersion < 3) {
+        const tx = (event.target as IDBOpenDBRequest).transaction!;
+        migrarIdentificadores(tx.objectStore("progreso"), false);
+        migrarIdentificadores(tx.objectStore("descargas"), true);
+      }
     };
+
     peticion.onsuccess = (event) => {
-      const base = (event.target as IDBOpenDBRequest).result;
-      base.onversionchange = () => base.close();
-      resolve(base);
+      const db = (event.target as IDBOpenDBRequest).result;
+      db.onversionchange = () => db.close(); // no bloquear futuras migraciones desde otra pestaña
+      resolve(db);
     };
     peticion.onerror = (event) => reject((event.target as IDBOpenDBRequest).error);
   });
 }
 
-export interface Descarga { modeloId: string; estado: "pendiente" | "listo"; }
-export function encolarDescargas(db: IDBDatabase, ids: string[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("descargas", "readwrite");
-    ids.forEach((modeloId) => tx.objectStore("descargas").put({ modeloId, estado: "pendiente" } satisfies Descarga));
-    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
-  });
-}
-export function obtenerDescargas(db: IDBDatabase): Promise<Descarga[]> {
-  return new Promise((resolve, reject) => {
-    const request = db.transaction("descargas", "readonly").objectStore("descargas").getAll();
-    request.onsuccess = () => resolve(request.result as Descarga[]); request.onerror = () => reject(request.error);
-  });
-}
-export function marcarDescargaLista(db: IDBDatabase, modeloId: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("descargas", "readwrite");
-    tx.objectStore("descargas").put({ modeloId, estado: "listo" } satisfies Descarga);
-    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
-  });
-}
-
-function registroBase(modeloId: string): ProgresoModelo {
-  return { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null };
-}
-
+/** Marca un modelo como visitado ahora. put(): crea o actualiza, nunca falla por clave repetida. */
 export function marcarModeloVisto(db: IDBDatabase, modeloId: string): Promise<ProgresoModelo> {
   return new Promise((resolve, reject) => {
-    const store = db.transaction("progreso", "readwrite").objectStore("progreso");
+    const tx = db.transaction("progreso", "readwrite");
+    const store = tx.objectStore("progreso");
     const peticion = store.get(modeloId);
+
     peticion.onsuccess = () => {
-      const registro = (peticion.result as ProgresoModelo | undefined) ?? registroBase(modeloId);
+      const registro: ProgresoModelo =
+        peticion.result || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null };
       registro.ultimaVisita = Date.now();
       const escritura = store.put(registro);
       escritura.onsuccess = () => resolve(registro);
@@ -71,12 +80,16 @@ export function marcarModeloVisto(db: IDBDatabase, modeloId: string): Promise<Pr
   });
 }
 
+/** Alterna el favorito de un modelo. Devuelve el nuevo estado. */
 export function alternarFavorito(db: IDBDatabase, modeloId: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    const store = db.transaction("progreso", "readwrite").objectStore("progreso");
+    const tx = db.transaction("progreso", "readwrite");
+    const store = tx.objectStore("progreso");
     const peticion = store.get(modeloId);
+
     peticion.onsuccess = () => {
-      const registro = (peticion.result as ProgresoModelo | undefined) ?? registroBase(modeloId);
+      const registro: ProgresoModelo =
+        peticion.result || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null };
       registro.favorito = !registro.favorito;
       const escritura = store.put(registro);
       escritura.onsuccess = () => resolve(registro.favorito);
@@ -86,46 +99,88 @@ export function alternarFavorito(db: IDBDatabase, modeloId: string): Promise<boo
   });
 }
 
+/** Trae todos los registros de progreso (para pintar el estado inicial de la demo). */
 export function obtenerTodoElProgreso(db: IDBDatabase): Promise<ProgresoModelo[]> {
   return new Promise((resolve, reject) => {
-    const peticion = db.transaction("progreso", "readonly").objectStore("progreso").getAll();
+    const tx = db.transaction("progreso", "readonly");
+    const peticion = tx.objectStore("progreso").getAll();
     peticion.onsuccess = () => resolve(peticion.result as ProgresoModelo[]);
     peticion.onerror = () => reject(peticion.error);
   });
 }
 
+/** Recorre con un cursor, por el índice porFavorito, los modelos marcados como favoritos. */
 export function obtenerFavoritos(db: IDBDatabase): Promise<ProgresoModelo[]> {
   return new Promise((resolve) => {
-    const favoritos: ProgresoModelo[] = [];
+    const resultado: ProgresoModelo[] = [];
     const indice = db.transaction("progreso", "readonly").objectStore("progreso").index("porFavorito");
-    const cursor = indice.openCursor(IDBKeyRange.only(true));
+    const cursor = indice.openCursor(IDBKeyRange.only(true as any));
+
     cursor.onsuccess = (event) => {
-      const actual = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
-      if (!actual) return resolve(favoritos);
-      favoritos.push(actual.value as ProgresoModelo);
-      actual.continue();
+      const c = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
+      if (c) {
+        resultado.push(c.value as ProgresoModelo);
+        c.continue();
+      } else {
+        resolve(resultado);
+      }
     };
   });
 }
 
+/** Guarda (cifrada) la nota de estudio de un modelo. Sesión 33, sección 4. */
 export async function guardarNotaDeEstudio(
   db: IDBDatabase,
   clave: CryptoKey,
   modeloId: string,
   texto: string,
-  cifrarTexto: (clave: CryptoKey, texto: string) => Promise<{ cifrado: ArrayBuffer; iv: Uint8Array }>,
+  cifrarTexto: (clave: CryptoKey, texto: string) => Promise<{ cifrado: ArrayBuffer; iv: Uint8Array }>
 ): Promise<void> {
   const { cifrado, iv } = await cifrarTexto(clave, texto);
-  const store = db.transaction("progreso", "readwrite").objectStore("progreso");
+  const tx = db.transaction("progreso", "readwrite");
+  const store = tx.objectStore("progreso");
   const existente = await new Promise<ProgresoModelo | undefined>((resolve) => {
-    store.get(modeloId).onsuccess = (event) => resolve((event.target as IDBRequest).result);
+    store.get(modeloId).onsuccess = (e) => resolve((e.target as IDBRequest).result);
   });
-  const registro = existente ?? registroBase(modeloId);
+  const registro: ProgresoModelo = existente || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null };
   registro.notaCifrada = cifrado;
   registro.notaIv = iv;
-  await new Promise<void>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const escritura = store.put(registro);
     escritura.onsuccess = () => resolve();
     escritura.onerror = () => reject(escritura.error);
+  });
+}
+
+export interface Descarga {
+  modeloId: string;
+  estado: "pendiente" | "listo";
+}
+
+/** Anota (o reinicia a «pendiente») la descarga de varios modelos. */
+export function encolarDescargas(db: IDBDatabase, ids: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("descargas", "readwrite");
+    const store = tx.objectStore("descargas");
+    ids.forEach((modeloId) => store.put({ modeloId, estado: "pendiente" } satisfies Descarga));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export function obtenerDescargas(db: IDBDatabase): Promise<Descarga[]> {
+  return new Promise((resolve, reject) => {
+    const peticion = db.transaction("descargas", "readonly").objectStore("descargas").getAll();
+    peticion.onsuccess = () => resolve(peticion.result as Descarga[]);
+    peticion.onerror = () => reject(peticion.error);
+  });
+}
+
+export function marcarDescargaLista(db: IDBDatabase, modeloId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("descargas", "readwrite");
+    tx.objectStore("descargas").put({ modeloId, estado: "listo" } satisfies Descarga);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }

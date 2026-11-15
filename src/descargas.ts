@@ -2,7 +2,8 @@ import { obtenerDescargas, marcarDescargaLista } from "./db";
 
 export const ETIQUETA_SYNC = "descargar-modelos";
 export const CACHE_MODELOS = "modelos-3d";
-export const urlDeModelo = (id: string) => `/modelos/${id}.json`;
+const BASE_URL = ((import.meta as ImportMeta & { env?: { BASE_URL: string } }).env?.BASE_URL ?? "/");
+export const urlDeModelo = (id: string) => `${BASE_URL}modelos/${id}.json`;
 export type AlProgresar = (hechos: number, total: number) => void | Promise<void>;
 
 export async function descargarPendientes(db: IDBDatabase, alProgresar: AlProgresar): Promise<number> {

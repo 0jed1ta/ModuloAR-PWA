@@ -90,6 +90,10 @@ body {
 .descargas-barra { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
 .descargas-barra span, #estado-descarga { color: #aab3c3; font-size: .9rem; }
 #progreso-descarga { width: 100%; height: .7rem; margin-top: .9rem; accent-color: #4e96d1; }
+.diagnostico-ar { margin: .8rem 1.2rem 1rem; color: #aab3c3; font-size: .85rem; }
+.diagnostico-ar pre { white-space: pre-wrap; margin: .6rem 0 0; color: #d7e3f5; }
+.xr-overlay { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+.xr-overlay button { pointer-events: auto; position: absolute; top: 1rem; right: 1rem; border: 1px solid #fff; border-radius: 999px; padding: .7rem 1rem; background: #0b1220dd; color: #fff; }
 
 .visor-controls {
   display: flex;

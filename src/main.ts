@@ -4,6 +4,7 @@ import { cifrarTexto, descifrarTexto, derivarClaveDesdeContrasena, obtenerOCrear
 import { registerSW } from "virtual:pwa-register";
 import { crearVisor, type Visor } from "./visor";
 import { hayOrientacionReal, iniciarControlOrientacion, pedirPermisoOrientacion, type ControlOrientacion } from "./sensores";
+import { describirErrorCamara, detenerCamaraDeFondo, iniciarCamaraDeFondo } from "./camara";
 
 const MODELOS_DEMO = [
   { id: "modelo-demo-1", nombre: "Patrón MVC" },
@@ -18,6 +19,7 @@ let progresoPorId = new Map<string, ProgresoModelo>();
 let visor: Visor | null = null;
 let controlOrientacion: ControlOrientacion | null = null;
 let lecturaTimer = 0;
+let camaraStream: MediaStream | null = null;
 
 async function obtenerClaveSesion(): Promise<CryptoKey | null> {
   if (claveSesion) return claveSesion;
@@ -40,10 +42,12 @@ function render() {
         <p>Explora el modelo con el ratón o mueve el teléfono para cambiar su orientación.</p>
       </header>
       <section class="visor-panel" aria-label="Visor 3D">
+        <video id="camara-fondo" class="camara-fondo" autoplay muted playsinline hidden></video>
         <div id="visor" class="visor-canvas"></div>
         <div class="visor-controls">
           <button id="btn-orientacion">📱 Rotar con el teléfono</button>
           <button id="btn-calibrar" class="btn-favorito" disabled>Calibrar</button>
+          <button id="btn-camara" class="btn-favorito">📷 Activar cámara</button>
           <span id="lectura-visor" class="lectura-visor"></span>
         </div>
         <p id="aviso-visor" class="aviso-visor" hidden></p>
@@ -127,7 +131,9 @@ function configurarVisor() {
   const calibrar = document.querySelector<HTMLButtonElement>("#btn-calibrar");
   const lectura = document.querySelector<HTMLElement>("#lectura-visor");
   const aviso = document.querySelector<HTMLElement>("#aviso-visor");
-  if (!contenedor || !boton || !calibrar || !lectura || !aviso) return;
+  const video = document.querySelector<HTMLVideoElement>("#camara-fondo");
+  const botonCamara = document.querySelector<HTMLButtonElement>("#btn-camara");
+  if (!contenedor || !boton || !calibrar || !lectura || !aviso || !video || !botonCamara) return;
   visor = crearVisor(contenedor);
   controlOrientacion = null;
   boton.addEventListener("click", async () => {
@@ -158,6 +164,35 @@ function configurarVisor() {
     }, 150);
   });
   calibrar.addEventListener("click", () => controlOrientacion?.calibrar());
+  const apagarCamara = () => {
+    if (!camaraStream) return;
+    detenerCamaraDeFondo(video, camaraStream);
+    camaraStream = null;
+    video.hidden = true;
+    visor?.fondoTransparente(false);
+    botonCamara.textContent = "📷 Activar cámara";
+    aviso.textContent = "La cámara se apagó al salir de la página. Actívala de nuevo con un clic.";
+    aviso.hidden = false;
+  };
+  botonCamara.addEventListener("click", async () => {
+    if (camaraStream) {
+      apagarCamara();
+      return;
+    }
+    try {
+      camaraStream = await iniciarCamaraDeFondo(video);
+      video.hidden = false;
+      visor?.fondoTransparente(true);
+      aviso.hidden = true;
+      botonCamara.textContent = "📷 Cámara activa (toca para apagar)";
+    } catch (error) {
+      aviso.textContent = describirErrorCamara(error);
+      aviso.hidden = false;
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) apagarCamara();
+  });
 }
 
 async function iniciar() {

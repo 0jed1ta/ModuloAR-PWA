@@ -2,6 +2,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { capacidadesDe, type CapacidadesAR } from "./xr";
 import { crearGestos } from "./gestos";
+import { construirModelo, type ModeloConstruido } from "./modelos/constructor";
+import type { DefinicionModelo } from "./modelos/tipos";
+import { anotar, PASO_FINAL } from "./rastro";
 
 export interface Visor {
   /** Fija la rotación objetivo del modelo (radianes). El visor la alcanza suavemente. */
@@ -21,6 +24,12 @@ export interface Visor {
   entrarEnAR(sesion: XRSession, opciones: OpcionesAR): Promise<EstadoAR>;
   /** true mientras hay una sesión AR abierta. */
   enAR(): boolean;
+  /** Sesión 40: reemplaza el modelo que se ve (construye su escena a partir de los datos). */
+  mostrarModelo(def: DefinicionModelo): void;
+  /** Sesión 40: resalta una pieza del modelo actual (null: ninguna). */
+  seleccionar(piezaId: string | null): void;
+  /** Sesión 40: avisa cuando el usuario toca una pieza (o el vacío) en la vista 3D. */
+  alTocarPieza(avisar: (piezaId: string | null) => void): void;
   destruir(): void;
 }
 
@@ -49,7 +58,9 @@ export interface OpcionesAR {
   alTerminar: () => void;
 }
 
-const ESCALA_INICIAL = 0.25; // el cubo de 1,6 m queda en 40 cm
+const ESCALA_INICIAL = 0.25; // el modelo (cabe en 1,6) queda en 40 cm
+const ESCALA_VISTA = 3;
+const DISTANCIA_VISTA = 6; // a cuánto de su centro mira la cámara de la vista normal // fuera de AR se ve más grande: hay rótulos que leer
 const ESCALA_MIN = 0.1;
 const ESCALA_MAX = 1;
 const CADA_CUANTOS_FOTOGRAMAS = 2; // el hit-test se consulta un fotograma de cada dos: basta para una retícula fluida
@@ -63,7 +74,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   escena.background = COLOR_FONDO;
 
   const camara = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-  camara.position.set(0, 0, 4);
+  camara.position.set(0, 3, 5);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setClearColor(0x000000, 0);
@@ -77,15 +88,10 @@ export function crearVisor(contenedor: HTMLElement): Visor {
 
   const raiz = new THREE.Group();
   const grupo = new THREE.Group();
-  const cubo = new THREE.Mesh(
-    new THREE.BoxGeometry(1.6, 1.6, 1.6),
-    new THREE.MeshStandardMaterial({ color: 0xffcc29, roughness: 0.45 })
-  );
-  const aristas = new THREE.LineSegments(
-    new THREE.EdgesGeometry(cubo.geometry),
-    new THREE.LineBasicMaterial({ color: 0x0b1220 })
-  );
-  grupo.add(cubo, aristas);
+  grupo.scale.setScalar(ESCALA_VISTA);
+  let modelo: ModeloConstruido | null = null;
+  let piezaElegida: string | null = null;
+  let centroY = 0; // altura del centro del modelo (para centrarlo en la vista normal)
   raiz.add(grupo);
   escena.add(raiz);
 
@@ -98,7 +104,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
 
   function ajustarTamano() {
     const ancho = contenedor.clientWidth || 320;
-    const alto = Math.round(ancho * 0.6);
+    const alto = Math.min(Math.round(ancho * 0.75), 560);
     renderer.setSize(ancho, alto);
     camara.aspect = ancho / alto;
     camara.updateProjectionMatrix();
@@ -121,6 +127,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   let sesionAR: XRSession | null = null;
 
   async function entrarEnAR(sesion: XRSession, opciones: OpcionesAR): Promise<EstadoAR> {
+    anotar("entrada");
     cancelAnimationFrame(animacion); // en AR NO manda requestAnimationFrame: manda el reloj del visor XR
     renderer.xr.enabled = true;
     renderer.xr.setReferenceSpaceType("local");
@@ -131,6 +138,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     const fondoPrevio = escena.background;
     escena.background = null; // la cámara real es el fondo: no se pinta nada detrás
     controles.enabled = false;
+    if (modelo) modelo.raiz.position.y = 0; // en AR el modelo apoya su BASE en la superficie
 
     let fase: FaseAR = caps.hitTest ? "buscando" : "colocado";
     let ancla: XRAnchor | null = null;
@@ -318,15 +326,20 @@ export function crearVisor(contenedor: HTMLElement): Visor {
       renderer.render(escena, camara);
     });
 
+    anotar("activa");
     sesion.addEventListener(
       "end",
       () => {
+        anotar("fin-1-bucle");
         renderer.setAnimationLoop(null);
         renderer.xr.enabled = false;
         sesionAR = null;
         gestos.destruir();
-        fuente?.cancel();
-        ancla?.delete();
+        anotar("fin-2-fuente");
+        try { fuente?.cancel(); } catch { /* la sesión ya terminó */ }
+        anotar("fin-3-ancla");
+        try { ancla?.delete(); } catch { /* idem */ }
+        anotar("fin-4-escena");
         escena.remove(reticula);
         reticula.geometry.dispose();
         (reticula.material as THREE.Material).dispose();
@@ -336,11 +349,18 @@ export function crearVisor(contenedor: HTMLElement): Visor {
         raiz.matrix.identity();
         raiz.visible = true;
         grupo.position.set(0, 0, 0);
-        grupo.scale.set(1, 1, 1);
+        grupo.scale.setScalar(ESCALA_VISTA);
+        if (modelo) modelo.raiz.position.y = -centroY;
         grupo.rotation.set(0, 0, 0);
-        ajustarTamano(); // el visor XR cambió el tamaño del canvas
-        bucle(); // vuelve el requestAnimationFrame normal
         opciones.alTerminar();
+        anotar("fin-5-espera");
+        window.setTimeout(() => {
+          anotar("fin-6-tamano");
+          ajustarTamano(); // el visor XR cambió el tamaño del canvas
+          anotar("fin-7-bucle");
+          bucle(); // vuelve el requestAnimationFrame normal
+          anotar(PASO_FINAL);
+        }, 250);
       },
       { once: true }
     );
@@ -349,8 +369,60 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     return estado();
   }
 
+  const rayoToque = new THREE.Raycaster();
+  let avisarToque: ((id: string | null) => void) | null = null;
+  let inicioToque: { x: number; y: number; t: number } | null = null;
+  const lienzo = renderer.domElement;
+  const alPulsar = (ev: PointerEvent) => {
+    inicioToque = { x: ev.clientX, y: ev.clientY, t: performance.now() };
+  };
+  const alSoltar = (ev: PointerEvent) => {
+    const ini = inicioToque;
+    inicioToque = null;
+    if (!ini || sesionAR || !modelo) return;
+    if (Math.hypot(ev.clientX - ini.x, ev.clientY - ini.y) > 8 || performance.now() - ini.t > 600) return;
+    const caja = lienzo.getBoundingClientRect();
+    rayoToque.setFromCamera(new THREE.Vector2(((ev.clientX - caja.left) / caja.width) * 2 - 1, -((ev.clientY - caja.top) / caja.height) * 2 + 1), camara);
+    const impactos = rayoToque.intersectObjects([...modelo.piezas.values()], false);
+    const id = (impactos[0]?.object.userData.piezaId as string | undefined) ?? null;
+    seleccionar(id === piezaElegida ? null : id); // volver a tocar la misma pieza la suelta
+    avisarToque?.(piezaElegida);
+  };
+  lienzo.addEventListener("pointerdown", alPulsar);
+  lienzo.addEventListener("pointerup", alSoltar);
+
+  function seleccionar(id: string | null) {
+    piezaElegida = id;
+    modelo?.resaltar(id);
+  }
+
+  function mostrarModelo(def: DefinicionModelo) {
+    if (modelo) {
+      grupo.remove(modelo.raiz);
+      modelo.destruir();
+    }
+    modelo = construirModelo(def);
+    grupo.add(modelo.raiz);
+    centroY = modelo.centroY;
+    piezaElegida = null;
+    if (!sesionAR) {
+      modelo.raiz.position.y = -centroY; // en la vista normal el modelo gira alrededor de su centro; en AR, apoyado por la base
+      grupo.rotation.set(0, 0, 0);
+      const elev = ((def.elevacion ?? 30) * Math.PI) / 180;
+      const dist = DISTANCIA_VISTA * (def.distancia ?? 1);
+      camara.position.set(0, dist * Math.sin(elev), dist * Math.cos(elev));
+      controles.target.set(0, 0, 0);
+      controles.update();
+    }
+  }
+
   const aGrados = (r: number) => Math.round((r * 180) / Math.PI);
   return {
+    mostrarModelo,
+    seleccionar,
+    alTocarPieza(avisar) {
+      avisarToque = avisar;
+    },
     rotarHacia(x, y) {
       objetivoX = x;
       objetivoY = y;
@@ -375,6 +447,9 @@ export function crearVisor(contenedor: HTMLElement): Visor {
       void sesionAR?.end();
       window.removeEventListener("resize", ajustarTamano);
       controles.dispose();
+      lienzo.removeEventListener("pointerdown", alPulsar);
+      lienzo.removeEventListener("pointerup", alSoltar);
+      modelo?.destruir();
       renderer.dispose();
       renderer.domElement.remove();
     },

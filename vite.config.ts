@@ -7,23 +7,12 @@ export default defineConfig({
       manifest: false,
       registerType: "autoUpdate",
       injectRegister: false,
-      workbox: {
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      injectManifest: {
         globPatterns: ["**/*.{html,js,css,png,json}"],
-        runtimeCaching: [
-          {
-            urlPattern: /\/iconos\//,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "imagenes",
-              expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 },
-            },
-          },
-          {
-            urlPattern: /\/api\//,
-            handler: "NetworkFirst",
-            options: { cacheName: "api-atlas3d" },
-          },
-        ],
+        globIgnores: ["modelos/**"],
       },
     }),
   ],

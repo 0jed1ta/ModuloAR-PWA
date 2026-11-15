@@ -1,10 +1,12 @@
 import "./style.css";
-import { abrirBaseDeDatos, alternarFavorito, guardarNotaDeEstudio, marcarModeloVisto, obtenerTodoElProgreso, type ProgresoModelo } from "./db";
+import { abrirBaseDeDatos, alternarFavorito, guardarNotaDeEstudio, marcarModeloVisto, obtenerTodoElProgreso, encolarDescargas, obtenerDescargas, type ProgresoModelo } from "./db";
 import { cifrarTexto, descifrarTexto, derivarClaveDesdeContrasena, obtenerOCrearSal } from "./crypto";
 import { registerSW } from "virtual:pwa-register";
 import { crearVisor, type Visor } from "./visor";
 import { hayOrientacionReal, iniciarControlOrientacion, pedirPermisoOrientacion, type ControlOrientacion } from "./sensores";
 import { describirErrorCamara, detenerCamaraDeFondo, iniciarCamaraDeFondo } from "./camara";
+import { estadoAvisos, pedirPermisoAvisos, mostrarAviso } from "./avisos";
+import { descargarPendientes, ETIQUETA_SYNC } from "./descargas";
 
 const MODELOS_DEMO = [
   { id: "modelo-demo-1", nombre: "Patrón MVC" },
@@ -52,6 +54,11 @@ function render() {
         </div>
         <p id="aviso-visor" class="aviso-visor" hidden></p>
       </section>
+      <section class="descargas-zona" aria-label="Uso sin conexión">
+        <h2>Uso sin conexión</h2>
+        <div class="descargas-barra"><button id="btn-avisos">🔔 Activar avisos</button><button id="btn-descargar">⬇ Descargar fichas para usar sin conexión</button><span id="estado-avisos"></span></div>
+        <progress id="progreso-descarga" max="3" value="0" hidden></progress><p id="estado-descarga" role="status"></p>
+      </section>
       <section class="modelos-grid" aria-label="Modelos de demostración">
         ${MODELOS_DEMO.map((modelo) => {
           const progreso = progresoPorId.get(modelo.id);
@@ -79,6 +86,7 @@ function render() {
   `;
 
   configurarVisor();
+  configurarDescargas();
 
   appEl.querySelectorAll<HTMLButtonElement>(".btn-visitar").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -119,6 +127,33 @@ function render() {
         window.alert("No se pudo descifrar la nota con esa contraseña.");
       }
     });
+  });
+}
+
+function configurarDescargas() {
+  const avisos = document.querySelector<HTMLButtonElement>("#btn-avisos");
+  const descargar = document.querySelector<HTMLButtonElement>("#btn-descargar");
+  const estado = document.querySelector<HTMLElement>("#estado-avisos");
+  const progreso = document.querySelector<HTMLProgressElement>("#progreso-descarga");
+  const mensaje = document.querySelector<HTMLElement>("#estado-descarga");
+  if (!avisos || !descargar || !estado || !progreso || !mensaje) return;
+  const pintarAvisos = () => {
+    const permiso = estadoAvisos();
+    avisos.disabled = permiso !== "default";
+    estado.textContent = permiso === "granted" ? "Avisos activos." : permiso === "denied" ? "Avisos bloqueados." : permiso === "no-soportado" ? "Avisos no compatibles." : "Avisos sin activar.";
+  };
+  pintarAvisos();
+  avisos.addEventListener("click", async () => { if (await pedirPermisoAvisos() === "granted") await mostrarAviso("Avisos activados", "Te avisaremos cuando las fichas estén listas."); pintarAvisos(); });
+  const ids = MODELOS_DEMO.map((modelo) => modelo.id);
+  const pintarProgreso = (hechos: number, total: number) => { progreso.hidden = false; progreso.max = total; progreso.value = hechos; mensaje.textContent = hechos >= total ? `✓ ${hechos} de ${total} fichas guardadas.` : `Descargando… ${hechos} de ${total} fichas.`; };
+  navigator.serviceWorker?.addEventListener("message", async (evento) => { if (evento.data?.tipo === "progreso") pintarProgreso(evento.data.hechos, evento.data.total); if (evento.data?.tipo === "descarga-completa") { const descargas = await obtenerDescargas(db); progreso.hidden = false; progreso.value = descargas.length; mensaje.textContent = "✓ Fichas disponibles sin conexión."; } });
+  descargar.addEventListener("click", async () => {
+    await encolarDescargas(db, ids); pintarProgreso(0, ids.length); descargar.disabled = true;
+    try {
+      let enSegundoPlano = false;
+      if ("serviceWorker" in navigator && "SyncManager" in window) { try { const registro = await navigator.serviceWorker.ready; await (registro as ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } }).sync.register(ETIQUETA_SYNC); enSegundoPlano = true; mensaje.textContent = "Descarga programada en segundo plano."; } catch { enSegundoPlano = false; } }
+      if (!enSegundoPlano) { await descargarPendientes(db, pintarProgreso); mensaje.textContent = "✓ Fichas disponibles sin conexión."; }
+    } catch (error) { mensaje.textContent = `No se pudo completar la descarga: ${error instanceof Error ? error.message : String(error)}`; } finally { descargar.disabled = false; }
   });
 }
 
@@ -212,5 +247,6 @@ if ("serviceWorker" in navigator) {
     onRegisterError(error) {
       console.error("Error al registrar el SW de Workbox:", error);
     },
+    onOfflineReady() { const mensaje = document.querySelector<HTMLElement>("#estado-descarga"); if (mensaje) mensaje.textContent = "✓ La app ya funciona sin conexión."; },
   });
 }

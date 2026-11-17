@@ -102,12 +102,15 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   let objetivoY = 0;
   let porSensores = false;
 
+  let sucio = true;
+
   function ajustarTamano() {
     const ancho = contenedor.clientWidth || 320;
     const alto = Math.min(Math.round(ancho * 0.75), 560);
     renderer.setSize(ancho, alto);
     camara.aspect = ancho / alto;
     camara.updateProjectionMatrix();
+    sucio = true;
   }
   ajustarTamano();
   window.addEventListener("resize", ajustarTamano);
@@ -118,9 +121,13 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     if (porSensores) {
       grupo.rotation.x += (objetivoX - grupo.rotation.x) * 0.15;
       grupo.rotation.y += (objetivoY - grupo.rotation.y) * 0.15;
+      sucio = true; // con sensores la escena se mueve sola
     }
-    controles.update();
-    renderer.render(escena, camara);
+    const camaraSeMovio = controles.update(); // true mientras el usuario (o la inercia) mueve la cámara
+    if (sucio || camaraSeMovio) {
+      sucio = false;
+      renderer.render(escena, camara);
+    }
   }
   bucle();
 
@@ -358,6 +365,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
           anotar("fin-6-tamano");
           ajustarTamano(); // el visor XR cambió el tamaño del canvas
           anotar("fin-7-bucle");
+          sucio = true; // el lienzo se vació al salir de AR: hay que dibujar de nuevo
           bucle(); // vuelve el requestAnimationFrame normal
           anotar(PASO_FINAL);
         }, 250);
@@ -394,6 +402,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   function seleccionar(id: string | null) {
     piezaElegida = id;
     modelo?.resaltar(id);
+    sucio = true;
   }
 
   function mostrarModelo(def: DefinicionModelo) {
@@ -402,6 +411,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
       modelo.destruir();
     }
     modelo = construirModelo(def);
+    sucio = true;
     grupo.add(modelo.raiz);
     centroY = modelo.centroY;
     piezaElegida = null;
@@ -429,6 +439,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     },
     controlPorSensores(activo) {
       porSensores = activo;
+      sucio = true;
       controles.enabled = !activo;
       if (!activo) grupo.rotation.set(0, 0, 0);
     },
@@ -437,6 +448,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     },
     fondoTransparente(activo) {
       escena.background = activo ? null : COLOR_FONDO;
+      sucio = true;
     },
     entrarEnAR,
     enAR() {

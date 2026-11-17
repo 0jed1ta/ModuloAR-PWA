@@ -1,8 +1,8 @@
-// InstalacionService — Sesión 44. El estado de la instalación vive FUERA de Angular (en instalar.ts:
-// el evento guardado es una variable del módulo). Aquí basta una señal que se actualiza cuando
-// instalar.ts avisa; en React hizo falta useSyncExternalStore.
+                                                                                                     
+                                                                                               
+                                                               
 import { DestroyRef, Injectable, computed, inject, signal } from "@angular/core";
-import { estadoInstalacion, iniciarInstalacion, instalacionRechazada, pedirInstalacion } from "../../instalar";
+import { estadoInstalacion, iniciarInstalacion, instalacionPospuesta, instalacionRechazada, pedirInstalacion, posponerInstalacion } from "../../instalar";
 
 export const TEXTO_INSTALACION = {
   instalada: "✓ Estás usando Atlas 3D como app instalada.",
@@ -17,6 +17,7 @@ export const TEXTO_INSTALACION = {
 export class InstalacionService {
   private readonly estado = signal(estadoInstalacion());
   private readonly rechazada = signal(instalacionRechazada());
+  private readonly pospuesta = signal(instalacionPospuesta());
 
   readonly instalable = computed(() => this.estado() === "instalable");
   readonly texto = computed(() => {
@@ -25,6 +26,7 @@ export class InstalacionService {
       : e === "recien-instalada" ? TEXTO_INSTALACION.recienInstalada
       : e === "instalable" ? TEXTO_INSTALACION.instalable
       : e === "ios" ? TEXTO_INSTALACION.ios
+      : this.pospuesta() ? "Elegiste «Ahora no». Volveremos a ofrecer la instalación dentro de siete días."
       : this.rechazada() ? TEXTO_INSTALACION.rechazada
       : TEXTO_INSTALACION.noDisponible;
   });
@@ -33,9 +35,11 @@ export class InstalacionService {
     const dejarDeEscuchar = iniciarInstalacion(() => {
       this.estado.set(estadoInstalacion());
       this.rechazada.set(instalacionRechazada());
+      this.pospuesta.set(instalacionPospuesta());
     });
     inject(DestroyRef).onDestroy(dejarDeEscuchar);
   }
 
   pedir = pedirInstalacion;
+  posponer = posponerInstalacion;
 }

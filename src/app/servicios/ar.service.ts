@@ -1,6 +1,6 @@
-// ARService — Sesión 44. La realidad aumentada de las Sesiones 38-42 (xr.ts y visor.ts no cambian):
-// ¿se puede?, entrar, el texto del overlay y la salida. Todo lo imperativo (la sesión WebXR, el
-// render) sigue en el visor; el servicio solo guarda lo que la pantalla necesita mostrar.
+                                                                                                    
+                                                                                                
+                                                                                          
 import { DestroyRef, Injectable, computed, inject, signal } from "@angular/core";
 import type { EstadoAR } from "../../visor";
 import { describirErrorAR, diagnosticarAR, mensajeSoporteAR, pedirSesionAR } from "../../xr";
@@ -9,7 +9,7 @@ import { VisorService } from "./visor.service";
 import { CamaraService } from "./camara.service";
 import { SensoresService } from "./sensores.service";
 
-// Texto de ayuda sobre la cámara según en qué punto va la colocación.
+                                                                      
 function ayudaAR(e: EstadoAR): string {
   if (!e.hitTest) return "Este dispositivo no ofrece hit-test: el modelo está a 1,5 m delante. Toca para traerlo delante de ti.";
   switch (e.fase) {
@@ -154,5 +154,9 @@ export class ARService {
 
   salir(): void {
     void this.sesion?.end();
+  }
+
+  quitar(): void {
+    this.visorSvc.visor()?.quitarEnAR();
   }
 }

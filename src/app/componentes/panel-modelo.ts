@@ -1,6 +1,6 @@
-// PanelModelo — Sesión 44. Pestañas, resumen, leyenda, piezas y detalle del modelo elegido.
-// En la Sesión 40 esto eran ~60 líneas de innerHTML, querySelectorAll y addEventListener;
-// aquí es una plantilla que lee señales. No hay nada que sincronizar a mano.
+                                                                                            
+                                                                                          
+                                                                             
 import { Component, computed, inject } from "@angular/core";
 import { CATALOGO } from "../../modelos";
 import { ROLES, type DefinicionModelo } from "../../modelos/tipos";

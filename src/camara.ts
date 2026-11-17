@@ -1,6 +1,6 @@
-// camara.ts — cámara del dispositivo como fondo del visor (Sesión 36).
-// Los errores y constraints de getUserMedia se vieron a fondo en la Sesión 24;
-// aquí solo cambia la DURACIÓN: la cámara queda abierta mientras se usa el visor.
+                                                                       
+                                                                               
+                                                                                  
 
 export async function iniciarCamaraDeFondo(video: HTMLVideoElement): Promise<MediaStream> {
   const stream = await navigator.mediaDevices.getUserMedia({
@@ -17,7 +17,7 @@ export function detenerCamaraDeFondo(video: HTMLVideoElement, stream: MediaStrea
   video.srcObject = null;
 }
 
-/** Traduce el error de getUserMedia a un mensaje que dice qué pasó y qué hacer. */
+                                                                                   
 export function describirErrorCamara(err: unknown): string {
   const nombre = err instanceof Error ? err.name : "";
   switch (nombre) {

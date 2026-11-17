@@ -1,22 +1,22 @@
-// constructor.ts — convierte una DefinicionModelo en objetos de Three.js (Sesión 40).
-// Piezas = mallas con el color de su rol; enlaces = flechas (cilindro + cono)
-// que salen del BORDE de una pieza y llegan al borde de otra; rótulos = sprites
-// con texto dibujado en un canvas. Al final todo se normaliza: el modelo entra en
-// una caja de 1,6 y su base queda en y = -0,8, igual que el cubo de las Sesiones 35-39,
-// así la lógica de AR (apoyar la base en la superficie) no cambia.
+                                                                                      
+                                                                              
+                                                                                
+                                                                                  
+                                                                                        
+                                                                   
 import * as THREE from "three";
 import { COLOR_ENLACE, ROLES, type DefinicionModelo, type Enlace, type Pieza } from "./tipos";
 
 export const TAM_NORMALIZADO = 1.6;
 
 export interface ModeloConstruido {
-  /** Raíz ya normalizada: se cuelga de `grupo` en el visor. */
+                                                               
   raiz: THREE.Group;
-  /** Altura del centro del modelo ya normalizado (su base está en -0,8). */
+                                                                            
   centroY: number;
-  /** Mallas de las piezas por id (con `userData.piezaId`): lo que se puede tocar. */
+                                                                                     
   piezas: Map<string, THREE.Mesh>;
-  /** Resalta una pieza y atenúa el resto; null quita el resalte. */
+                                                                    
   resaltar(id: string | null): void;
   destruir(): void;
 }
@@ -26,7 +26,7 @@ interface FlechaConstruida {
   materiales: THREE.MeshBasicMaterial[];
 }
 
-// ── Rótulos: texto dibujado en un canvas y pegado a un Sprite ──
+                                                                  
 function crearRotulo(texto: string, altura: number, pequeno = false): THREE.Sprite {
   const px = pequeno ? 40 : 56;
   const lienzo = document.createElement("canvas");

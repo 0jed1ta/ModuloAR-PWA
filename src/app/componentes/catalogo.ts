@@ -1,6 +1,6 @@
-// Catalogo — Sesión 44. Las tarjetas con favoritos, «visto» y nota de estudio cifrada (Sesiones 33-34).
-// Antes, cada acción terminaba en render(): borrar todo y reescribirlo. Ahora cada tarjeta es un
-// componente con su propio estado (la nota que escribes) y Angular cambia solo lo que cambió.
+                                                                                                        
+                                                                                                 
+                                                                                              
 import { Component, afterNextRender, computed, inject, input, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { CATALOGO } from "../../modelos";
@@ -24,7 +24,7 @@ export class Tarjeta {
   readonly modelo = input.required<Modelo>();
   readonly destacada = input(false);
 
-  // Las acciones no se pasan de padre a hijo: la tarjeta pide los servicios que necesita.
+                                                                                          
   protected readonly progresoSvc = inject(ProgresoService);
   private readonly panel = inject(PanelService);
 
@@ -37,7 +37,7 @@ export class Tarjeta {
   });
 
   constructor() {
-    // Una notificación puede abrir la app con ?modelo=ID para destacar esa ficha (Sesión 37).
+                                                                                              
     afterNextRender(() => {
       if (this.destacada()) document.getElementById(`tarjeta-${this.modelo().id}`)?.scrollIntoView({ block: "center" });
     });

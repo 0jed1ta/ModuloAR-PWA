@@ -1,7 +1,7 @@
-// crypto.ts — idéntico en sustancia a crypto.js de la Sesión 22 (Gestor de
-// Tareas), solo tipado para este proyecto TypeScript. Sesión 33, sección 4:
-// la misma clave y las mismas funciones de cifrado se reutilizan tal cual,
-// sin resolver un segundo problema criptográfico.
+                                                                           
+                                                                            
+                                                                           
+                                                  
 
 export async function derivarClaveDesdeContrasena(contrasena: string, sal: Uint8Array): Promise<CryptoKey> {
   const materialBase = await crypto.subtle.importKey(
@@ -35,7 +35,7 @@ export async function descifrarTexto(clave: CryptoKey, { cifrado, iv }: { cifrad
 
 const CLAVE_SAL = "atlas3d-sal";
 
-/** La sal no es secreta; se guarda en localStorage igual que en el Gestor de Tareas (Sesión 22). */
+                                                                                                    
 export function obtenerOCrearSal(): Uint8Array {
   const guardada = localStorage.getItem(CLAVE_SAL);
   if (guardada) {

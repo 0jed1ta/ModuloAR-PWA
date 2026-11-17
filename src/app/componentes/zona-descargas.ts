@@ -1,5 +1,5 @@
-// ZonaDescargas — Sesión 44. Avisos y descarga de fichas para usar sin conexión (Sesión 37).
-// El Service Worker (sw.ts) no cambia: sigue mandando mensajes de progreso a todas las ventanas.
+                                                                                             
+                                                                                                 
 import { Component, DestroyRef, effect, inject, signal } from "@angular/core";
 import { encolarDescargas } from "../../db";
 import { ETIQUETA_SYNC, descargarPendientes } from "../../descargas";
@@ -32,12 +32,12 @@ export class ZonaDescargas {
 
   constructor() {
     const sw = inject(SwService);
-    // El servicio avisa cuando el precaché quedó completo por primera vez.
+                                                                           
     effect(() => {
       if (sw.offlineReady()) this.mensaje.set("✓ La app ya funciona sin conexión.");
     });
 
-    // El SW informa el avance (y el final) a todas las ventanas abiertas.
+                                                                          
     const alMensaje = async (e: MessageEvent) => {
       if (e.data?.tipo === "progreso") this.pintarProgreso(e.data.hechos, e.data.total);
       if (e.data?.tipo === "descarga-completa") await this.progresoSvc.recargar();

@@ -1,8 +1,8 @@
-/// <reference lib="webworker" />
-// sw.ts — Service Worker propio del Atlas 3D (Sesión 37).
-// Equivale al sw-propio.js del Gestor (Sesión 26), pero aquí Vite lo empaqueta:
-// puede importar módulos de Workbox y los de nuestro propio código.
-// vite-plugin-pwa inyecta la lista de precaché donde está self.__WB_MANIFEST.
+                                 
+                                                          
+                                                                                
+                                                                    
+                                                                              
 import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { CacheFirst, NetworkFirst } from "workbox-strategies";
@@ -14,20 +14,20 @@ import { BASE_URL } from "./base";
 
 declare const self: ServiceWorkerGlobalScope;
 
-// Background Sync no está en los tipos estándar de TypeScript: se declara lo mínimo que usamos.
+                                                                                                
 interface SyncEvent extends ExtendableEvent {
   readonly tag: string;
   readonly lastChance: boolean;
 }
 
-// Con registerType:"autoUpdate" y un SW propio, activar la versión nueva
-// es TU trabajo (con generateSW lo hacía el plugin).
+                                                                         
+                                                     
 self.skipWaiting();
 clientsClaim();
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Ruta base de la app: «/» en local, «/nombre-del-repo/» en GitHub Pages.
+                                                                          
 const BASE = BASE_URL;
 
 registerRoute(
@@ -39,10 +39,10 @@ registerRoute(
 );
 registerRoute(({ url }) => url.pathname.startsWith(BASE + "api/"), new NetworkFirst({ cacheName: "api-atlas3d" }));
 
-// Las fichas /modelos/*.json NO están en el precaché (se excluyeron en
-// vite.config.ts): solo entran a la caché «modelos-3d» cuando el usuario las
-// descarga. Mientras no estén ahí, esta ruta las pide a la red; si ya están,
-// responde desde la caché aunque no haya conexión.
+                                                                       
+                                                                             
+                                                                             
+                                                   
 registerRoute(
   ({ url }) => url.pathname.startsWith(BASE + "modelos/"),
   async ({ request }) => {
@@ -51,7 +51,7 @@ registerRoute(
   }
 );
 
-// ── Background Sync: terminar las descargas pendientes ─────────────────────
+                                                                              
 async function avisarALasVentanas(mensaje: unknown): Promise<readonly WindowClient[]> {
   const ventanas = await self.clients.matchAll({ type: "window" });
   ventanas.forEach((v) => v.postMessage(mensaje));
@@ -70,7 +70,7 @@ self.addEventListener("sync", (event) => {
         });
         if (n === 0) return;
         const ventanas = await avisarALasVentanas({ tipo: "descarga-completa" });
-        // Notificación solo si NO hay ninguna ventana visible.
+                                                               
         if (!ventanas.some((v) => v.visibilityState === "visible")) {
           await self.registration.showNotification("Modelos listos", {
             body: "Las fichas ya están en tu dispositivo: puedes consultarlas sin conexión.",

@@ -1,4 +1,4 @@
-// SensoresService — Sesión 44. Rotar el modelo con la inclinación del teléfono (Sesión 35).
+                                                                                            
 import { DestroyRef, Injectable, inject, signal } from "@angular/core";
 import { hayOrientacionReal, iniciarControlOrientacion, pedirPermisoOrientacion, type ControlOrientacion } from "../../sensores";
 import { VisorService } from "./visor.service";
@@ -13,7 +13,7 @@ export class SensoresService {
   readonly lectura = signal("");
 
   constructor() {
-    // Si la aplicación se destruye con los sensores activos, se sueltan.
+                                                                         
     inject(DestroyRef).onDestroy(() => {
       window.clearInterval(this.temporizador);
       this.control?.detener();
@@ -33,7 +33,7 @@ export class SensoresService {
     const visor = this.visorSvc.visor();
     if (!visor) return;
     if (this.control) {
-      this.apagar(); // segundo clic: volver al control manual
+      this.apagar();                                          
       return;
     }
     const permiso = await pedirPermisoOrientacion();
@@ -49,7 +49,7 @@ export class SensoresService {
     visor.controlPorSensores(true);
     this.control = iniciarControlOrientacion((x, y) => visor.rotarHacia(x, y));
     this.activo.set(true);
-    // Mientras los sensores están activos, la lectura en pantalla se refresca cada 150 ms.
+                                                                                           
     this.temporizador = window.setInterval(() => {
       const { x, y } = visor.rotacionActualGrados();
       this.lectura.set(`rotación X ${x}° · Y ${y}°`);

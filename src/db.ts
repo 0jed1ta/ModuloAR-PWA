@@ -1,15 +1,15 @@
-// db.ts — envoltorio en promesas de IndexedDB para el progreso del Atlas 3D.
-// Mismo patrón de la Sesión 22 (Gestor de Tareas), reescrito aquí con los
-// nombres reales del Atlas 3D — sin cambiar cómo funciona por dentro.
-// Sesión 33, sección 2 y 3.
+                                                                             
+                                                                          
+                                                                      
+                            
 
 const NOMBRE_DB = "atlas3d-progreso-db";
-// Versión 2 (Sesión 37): se agrega el almacén "descargas" (cola de modelos para usar sin conexión).
-// Versión 3 (Sesión 40): los modelos de prueba (modelo-demo-1..3) pasan a tener nombre real
-// (mvc, capas, microservicios). La migración RENOMBRA los registros para no perder favoritos ni notas.
-const VERSION_DB = 3;
+                                                                                                    
+                                                                                            
+                                                                                                       
+const VERSION_DB = 4;
 
-/** Sesión 40: correspondencia entre los identificadores viejos y los nuevos. */
+                                                                                
 export const RENOMBRES_V3: Record<string, string> = {
   "modelo-demo-1": "mvc",
   "modelo-demo-2": "capas",
@@ -22,9 +22,10 @@ export interface ProgresoModelo {
   ultimaVisita: number | null;
   notaCifrada: ArrayBuffer | null;
   notaIv: Uint8Array | null;
+  visitas: number;
 }
 
-/** Reescribe los registros con identificador viejo. En «descargas» vuelven a «pendiente»: la caché de modelos aún no tiene los archivos nuevos. */
+                                                                                                                                                   
 function migrarIdentificadores(store: IDBObjectStore, reiniciarDescarga: boolean) {
   for (const [viejo, nuevo] of Object.entries(RENOMBRES_V3)) {
     const lectura = store.get(viejo);
@@ -37,15 +38,15 @@ function migrarIdentificadores(store: IDBObjectStore, reiniciarDescarga: boolean
   }
 }
 
-/** Abre (o crea) la base de datos de progreso. */
+                                                  
 export function abrirBaseDeDatos(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const peticion = indexedDB.open(NOMBRE_DB, VERSION_DB);
 
     peticion.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
-      // Migración por tramos (Sesión 22/26): quien viene de la v1 conserva su
-      // progreso y solo recibe lo nuevo.
+                                                                              
+                                         
       if (event.oldVersion < 1) {
         const store = db.createObjectStore("progreso", { keyPath: "modeloId" });
         store.createIndex("porFavorito", "favorito", { unique: false });
@@ -55,24 +56,36 @@ export function abrirBaseDeDatos(): Promise<IDBDatabase> {
         db.createObjectStore("descargas", { keyPath: "modeloId" });
       }
       if (event.oldVersion >= 1 && event.oldVersion < 3) {
-        // La clave de un registro no se puede cambiar: se lee cada registro viejo, se escribe
-        // con la clave nueva y se borra el viejo, todo dentro de la transacción de la migración.
+                                                                                              
+                                                                                                 
         const tx = (event.target as IDBOpenDBRequest).transaction!;
         migrarIdentificadores(tx.objectStore("progreso"), false);
         migrarIdentificadores(tx.objectStore("descargas"), true);
+      }
+      if (event.oldVersion >= 1 && event.oldVersion < 4) {
+        const tx = (event.target as IDBOpenDBRequest).transaction!;
+        const store = tx.objectStore("progreso");
+        const cursor = store.openCursor();
+        cursor.onsuccess = () => {
+          const actual = cursor.result;
+          if (!actual) return;
+          const registro = actual.value as ProgresoModelo;
+          if (typeof registro.visitas !== "number") actual.update({ ...registro, visitas: registro.ultimaVisita ? 1 : 0 });
+          actual.continue();
+        };
       }
     };
 
     peticion.onsuccess = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
-      db.onversionchange = () => db.close(); // no bloquear futuras migraciones desde otra pestaña
+      db.onversionchange = () => db.close();                                                      
       resolve(db);
     };
     peticion.onerror = (event) => reject((event.target as IDBOpenDBRequest).error);
   });
 }
 
-/** Marca un modelo como visitado ahora. put(): crea o actualiza, nunca falla por clave repetida. */
+                                                                                                    
 export function marcarModeloVisto(db: IDBDatabase, modeloId: string): Promise<ProgresoModelo> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("progreso", "readwrite");
@@ -81,8 +94,9 @@ export function marcarModeloVisto(db: IDBDatabase, modeloId: string): Promise<Pr
 
     peticion.onsuccess = () => {
       const registro: ProgresoModelo =
-        peticion.result || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null };
+        peticion.result || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null, visitas: 0 };
       registro.ultimaVisita = Date.now();
+      registro.visitas = (registro.visitas || 0) + 1;
       const escritura = store.put(registro);
       escritura.onsuccess = () => resolve(registro);
       escritura.onerror = () => reject(escritura.error);
@@ -91,7 +105,7 @@ export function marcarModeloVisto(db: IDBDatabase, modeloId: string): Promise<Pr
   });
 }
 
-/** Alterna el favorito de un modelo. Devuelve el nuevo estado. */
+                                                                  
 export function alternarFavorito(db: IDBDatabase, modeloId: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("progreso", "readwrite");
@@ -100,7 +114,7 @@ export function alternarFavorito(db: IDBDatabase, modeloId: string): Promise<boo
 
     peticion.onsuccess = () => {
       const registro: ProgresoModelo =
-        peticion.result || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null };
+        peticion.result || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null, visitas: 0 };
       registro.favorito = !registro.favorito;
       const escritura = store.put(registro);
       escritura.onsuccess = () => resolve(registro.favorito);
@@ -110,7 +124,7 @@ export function alternarFavorito(db: IDBDatabase, modeloId: string): Promise<boo
   });
 }
 
-/** Trae todos los registros de progreso (para pintar el estado inicial de la demo). */
+                                                                                       
 export function obtenerTodoElProgreso(db: IDBDatabase): Promise<ProgresoModelo[]> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("progreso", "readonly");
@@ -120,7 +134,7 @@ export function obtenerTodoElProgreso(db: IDBDatabase): Promise<ProgresoModelo[]
   });
 }
 
-/** Recorre con un cursor, por el índice porFavorito, los modelos marcados como favoritos. */
+                                                                                             
 export function obtenerFavoritos(db: IDBDatabase): Promise<ProgresoModelo[]> {
   return new Promise((resolve) => {
     const resultado: ProgresoModelo[] = [];
@@ -139,7 +153,7 @@ export function obtenerFavoritos(db: IDBDatabase): Promise<ProgresoModelo[]> {
   });
 }
 
-/** Guarda (cifrada) la nota de estudio de un modelo. Sesión 33, sección 4. */
+                                                                              
 export async function guardarNotaDeEstudio(
   db: IDBDatabase,
   clave: CryptoKey,
@@ -153,7 +167,7 @@ export async function guardarNotaDeEstudio(
   const existente = await new Promise<ProgresoModelo | undefined>((resolve) => {
     store.get(modeloId).onsuccess = (e) => resolve((e.target as IDBRequest).result);
   });
-  const registro: ProgresoModelo = existente || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null };
+  const registro: ProgresoModelo = existente || { modeloId, favorito: false, ultimaVisita: null, notaCifrada: null, notaIv: null, visitas: 0 };
   registro.notaCifrada = cifrado;
   registro.notaIv = iv;
   return new Promise((resolve, reject) => {
@@ -163,13 +177,13 @@ export async function guardarNotaDeEstudio(
   });
 }
 
-// ── Sesión 37: cola de descargas para uso sin conexión ─────────────────────
+                                                                              
 export interface Descarga {
   modeloId: string;
   estado: "pendiente" | "listo";
 }
 
-/** Anota (o reinicia a «pendiente») la descarga de varios modelos. */
+                                                                      
 export function encolarDescargas(db: IDBDatabase, ids: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("descargas", "readwrite");

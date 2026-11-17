@@ -1,29 +1,29 @@
-// gestos.ts — gestos con los dedos sobre un elemento (Sesión 39).
-// Un dedo que se arrastra  → mover.
-// Dos dedos que se acercan o alejan → escalar (factor).
-// Dos dedos que giran → girar (radianes).
-// Usa Pointer Events, así que funciona igual con dedo, lápiz o ratón.
+                                                                  
+                                    
+                                                        
+                                          
+                                                                      
 
 export interface AccionesGestos {
-  /** Un dedo arrastra. `primero` es true en el primer movimiento de cada arrastre. */
+                                                                                      
   alMover(x: number, y: number, primero: boolean): void;
-  /** Giro de los dos dedos desde el evento anterior, en radianes. */
+                                                                     
   alGirar(radianes: number): void;
-  /** Cambio de separación entre los dos dedos: 1.1 = 10 % más separados. */
+                                                                            
   alEscalar(factor: number): void;
 }
 
 export interface Gestos {
-  /**
-   * true si el toque actual ya se convirtió en gesto (arrastre o dos dedos).
-   * Sirve para NO tratar ese toque también como un «tocar para colocar».
-   * Se reinicia al apoyar el primer dedo.
-   */
+     
+                                                                             
+                                                                         
+                                          
+     
   huboGesto(): boolean;
   destruir(): void;
 }
 
-const UMBRAL_ARRASTRE_PX = 10; // por debajo de esto es un toque, no un arrastre
+const UMBRAL_ARRASTRE_PX = 10;                                                  
 
 export function crearGestos(el: HTMLElement, acciones: AccionesGestos): Gestos {
   const dedos = new Map<number, { x: number; y: number }>();
@@ -39,7 +39,7 @@ export function crearGestos(el: HTMLElement, acciones: AccionesGestos): Gestos {
   };
 
   function alBajar(e: PointerEvent) {
-    // Los botones del overlay (como «Salir de AR») no inician gestos.
+                                                                      
     if ((e.target as HTMLElement).closest("button")) return;
     if (dedos.size === 0) {
       hubo = false;
@@ -51,7 +51,7 @@ export function crearGestos(el: HTMLElement, acciones: AccionesGestos): Gestos {
       const m = medida();
       distanciaPrev = m.distancia;
       anguloPrev = m.angulo;
-      hubo = true; // con dos dedos nunca es un toque
+      hubo = true;                                   
     }
   }
 
@@ -70,7 +70,7 @@ export function crearGestos(el: HTMLElement, acciones: AccionesGestos): Gestos {
       const m = medida();
       if (distanciaPrev > 0) acciones.alEscalar(m.distancia / distanciaPrev);
       let d = m.angulo - anguloPrev;
-      if (d > Math.PI) d -= 2 * Math.PI; // el ángulo da la vuelta en ±180°: se normaliza
+      if (d > Math.PI) d -= 2 * Math.PI;                                                 
       if (d < -Math.PI) d += 2 * Math.PI;
       acciones.alGirar(d);
       distanciaPrev = m.distancia;

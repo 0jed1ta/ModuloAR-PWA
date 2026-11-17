@@ -1,14 +1,14 @@
-// xr.ts — realidad aumentada con WebXR (Sesiones 38 y 39).
-// Sesión 38: detectar si se puede, pedir la sesión dentro de un clic y cerrarla bien.
-// Sesión 39: además se piden «hit-test» (encontrar una superficie real; primero como
-// función requerida y, si el dispositivo no la ofrece, como opcional) y «anchors»
-// (anclar el objeto a ella), y se averigua cuáles concedió realmente el navegador
-// para tener un plan B en cada caso.
+                                                           
+                                                                                      
+                                                                                     
+                                                                                  
+                                                                                  
+                                     
 
-/** Resultado de preguntar «¿puedo usar AR aquí?». */
+                                                     
 export type SoporteAR = "disponible" | "contexto-inseguro" | "sin-webxr" | "sin-ar";
 
-/** Estado de soporte y, además, las comprobaciones una por una (para mostrarlas en pantalla). */
+                                                                                                 
 export async function diagnosticarAR(): Promise<{ estado: SoporteAR; lineas: string[] }> {
   const lineas: string[] = [];
   const seguro = window.isSecureContext;

@@ -1,6 +1,6 @@
-// avisos.ts — notificaciones locales del Atlas 3D (Sesión 37).
-// Misma regla que en la Sesión 26: el permiso se pide dentro de un clic, y
-// una notificación solo se justifica cuando el usuario NO está mirando la app.
+                                                               
+                                                                           
+                                                                               
 
 import { BASE_URL } from "./base";
 
@@ -15,7 +15,7 @@ export async function pedirPermisoAvisos(): Promise<EstadoAvisos> {
   return Notification.requestPermission();
 }
 
-/** Muestra una notificación a través del Service Worker (funciona también en Android). */
+                                                                                          
 export async function mostrarAviso(titulo: string, cuerpo: string, url = BASE_URL, tag = "atlas-aviso"): Promise<boolean> {
   if (estadoAvisos() !== "granted") return false;
   const reg = await navigator.serviceWorker.ready;

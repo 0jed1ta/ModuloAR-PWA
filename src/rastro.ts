@@ -1,8 +1,8 @@
-// rastro.ts — migas de pan para diagnosticar cierres de la pestaña (Sesión 40).
-// Si Chrome cierra la pestaña («¡Oh, no!») no hay consola que mirar. Antes de cada paso
-// delicado de la salida de AR se anota su nombre en localStorage (una escritura síncrona
-// llega al disco aunque la pestaña muera justo después). Al volver a abrir la app se
-// lee la última anotación: dice hasta dónde se llegó.
+                                                                                
+                                                                                        
+                                                                                         
+                                                                                     
+                                                      
 const CLAVE = "atlas3d-rastro-ar";
 export const PASO_FINAL = "fin-ok";
 

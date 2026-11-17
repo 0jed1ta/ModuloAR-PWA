@@ -1,5 +1,5 @@
-// CamaraService — Sesión 44. La cámara como fondo del visor (Sesión 36): se pide dentro del clic,
-// y se apaga sola si la persona sale de la página. El <video> lo registra el componente ZonaVisor.
+                                                                                                  
+                                                                                                   
 import { DestroyRef, Injectable, inject, signal } from "@angular/core";
 import { describirErrorCamara, detenerCamaraDeFondo, iniciarCamaraDeFondo } from "../../camara";
 import { VisorService } from "./visor.service";
@@ -13,7 +13,7 @@ export class CamaraService {
   readonly activa = signal(false);
 
   constructor() {
-    // Una cámara abierta en segundo plano gasta batería y deja el LED encendido.
+                                                                                 
     const alCambiarVisibilidad = () => {
       if (document.hidden && this.stream) {
         this.apagar();
@@ -42,7 +42,7 @@ export class CamaraService {
     }
     this.visorSvc.aviso.set("");
     try {
-      // El permiso se pide AQUÍ, dentro del clic — no al cargar la página.
+                                                                           
       this.stream = await iniciarCamaraDeFondo(this.video!);
     } catch (err) {
       this.visorSvc.aviso.set(describirErrorCamara(err));

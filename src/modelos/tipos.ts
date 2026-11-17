@@ -1,10 +1,10 @@
-// tipos.ts — cómo se DESCRIBE un modelo de arquitectura (Sesión 40).
-// Un modelo no es un archivo 3D: es una lista de piezas y de enlaces entre
-// ellas. Un constructor genérico (constructor.ts) convierte esa descripción
-// en objetos de Three.js. Así, agregar un patrón nuevo es escribir datos,
-// no geometría.
+                                                                     
+                                                                           
+                                                                            
+                                                                          
+                
 
-/** Qué responsabilidad cumple una pieza: decide su color y la leyenda. */
+                                                                          
 export type Rol = "actor" | "presentacion" | "coordinacion" | "logica" | "datos" | "infra";
 
 export type Forma = "caja" | "cilindro" | "esfera";
@@ -14,17 +14,17 @@ export interface Pieza {
   nombre: string;
   rol: Rol;
   forma: Forma;
-  /** Centro de la pieza (x derecha, y arriba, z hacia el espectador). */
+                                                                         
   pos: [number, number, number];
-  /** Ancho, alto y fondo. */
+                             
   tam: [number, number, number];
-  /** Frase corta: viaja con el código, así se lee aunque no haya conexión. */
+                                                                              
   resumen: string;
-  /** Dónde va el rótulo: «arriba» de la pieza (por defecto), «abajo», o «frente», sobre su cara delantera. */
+                                                                                                              
   rotulo?: "arriba" | "abajo" | "frente";
 }
 
-/** Cómo se comunican dos piezas: una llamada directa, un evento, o un flujo de datos. */
+                                                                                         
 export type TipoEnlace = "llamada" | "evento" | "datos";
 
 export interface Enlace {
@@ -32,24 +32,24 @@ export interface Enlace {
   a: string;
   etiqueta?: string;
   tipo: TipoEnlace;
-  /** Desplaza la flecha entera, para dibujar dos flechas paralelas entre las mismas piezas. */
+                                                                                               
   desvio?: [number, number, number];
 }
 
 export interface DefinicionModelo {
   id: string;
   nombre: string;
-  /** Una línea para la lista de modelos. */
+                                            
   resumen: string;
   piezas: Pieza[];
   enlaces: Enlace[];
-  /** Altura de la cámara de la vista normal, en grados sobre el horizonte (cada modelo se lee mejor desde un ángulo distinto). */
+                                                                                                                                  
   elevacion?: number;
-  /** Factor de la distancia de la cámara (menor = más cerca). Por defecto 1. */
+                                                                                
   distancia?: number;
 }
 
-/** Ficha ampliada: es el JSON que se descarga para usar sin conexión. */
+                                                                         
 export interface Ficha {
   id: string;
   nombre: string;

@@ -1,5 +1,5 @@
-<!-- Un toque sobre un botón del overlay NO debe contar como «tocar para colocar»: el navegador avisa
-     con «beforexrselect» y basta cancelarlo. Angular enlaza cualquier evento del DOM con (evento). -->
+                                                                                                     
+                                                                                                       
 <p id="xr-estado">{{ ar.textos().ayuda }}</p>
 <p id="xr-datos" class="xr-datos">{{ ar.textos().datos }}</p>
 <div class="xr-piezas">
@@ -7,4 +7,5 @@
   <p id="xr-pieza" class="xr-pieza">{{ textoPieza() }}</p>
   <button type="button" id="btn-pieza-sig" aria-label="Pieza siguiente" (click)="panel.recorrerPiezas(1)" (beforexrselect)="$event.preventDefault()">▶</button>
 </div>
+<button type="button" id="btn-quitar-ar" (click)="ar.quitar()" (beforexrselect)="$event.preventDefault()">Quitar modelo</button>
 <button type="button" id="btn-salir-ar" (click)="ar.salir()" (beforexrselect)="$event.preventDefault()">Salir de AR</button>

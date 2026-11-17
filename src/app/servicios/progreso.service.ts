@@ -1,6 +1,6 @@
-// ProgresoService — Sesión 44. La capa de IndexedDB (db.ts) sigue igual; el servicio la ofrece a los
-// componentes: el progreso por modelo, las fichas descargadas y las acciones que los cambian.
-// Un servicio es una clase con estado que Angular crea UNA vez y entrega a quien la pida (inject).
+                                                                                                     
+                                                                                              
+                                                                                                   
 import { Injectable, signal } from "@angular/core";
 import {
   abrirBaseDeDatos, alternarFavorito, guardarNotaDeEstudio, marcarModeloVisto,
@@ -10,7 +10,7 @@ import { cifrarTexto, derivarClaveDesdeContrasena, descifrarTexto, obtenerOCrear
 
 @Injectable({ providedIn: "root" })
 export class ProgresoService {
-  // La base se abre una sola vez; la promesa se guarda para que cualquier manejador pueda esperarla.
+                                                                                                     
   readonly dbPromesa: Promise<IDBDatabase> = abrirBaseDeDatos();
   private claveSesion: CryptoKey | null = null;
 

@@ -1,7 +1,7 @@
-// ZonaVisor — Sesión 44. La barra de botones, el lienzo 3D, el panel del modelo y el estado de la AR.
-// Aquí está la frontera entre Angular y Three.js: Angular dibuja los botones y los textos;
-// el <div id="visor"> se lo entrega VACÍO al visor, que es dueño de lo que hay dentro (el <canvas>).
-// El selector es de ATRIBUTO («section[zonaVisor]»): el componente ES el <section>, sin elemento envoltorio.
+                                                                                                      
+                                                                                           
+                                                                                                     
+                                                                                                             
 import { Component, ElementRef, afterNextRender, inject, viewChild } from "@angular/core";
 import { PanelModelo } from "./panel-modelo";
 import { VisorService } from "../servicios/visor.service";
@@ -25,7 +25,7 @@ export class ZonaVisor {
   private readonly video = viewChild.required<ElementRef<HTMLVideoElement>>("video");
 
   constructor() {
-    // El <div id="visor"> existe recién después del primer dibujo: entonces se crea el visor.
+                                                                                              
     afterNextRender(() => {
       this.camara.registrarVideo(this.video().nativeElement);
       this.visorSvc.montar(this.contenedor().nativeElement);

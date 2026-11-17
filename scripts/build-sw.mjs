@@ -1,7 +1,7 @@
-// build-sw.mjs — Sesión 44. Empaqueta src/sw.ts (esbuild) y le inyecta el precaché (workbox-build).
-// Es lo mismo que hacía vite-plugin-pwa con strategies:"injectManifest" en las Sesiones 37-43:
-//   • esbuild junta sw.ts con los módulos de Workbox y con db.ts / descargas.ts en UN archivo clásico;
-//   • injectManifest recorre dist/, arma la lista de archivos y la escribe donde está self.__WB_MANIFEST.
+                                                                                                    
+                                                                                               
+                                                                                                       
+                                                                                                          
 import { build } from "esbuild";
 import { injectManifest } from "workbox-build";
 import { rmSync } from "node:fs";
@@ -22,8 +22,8 @@ const { count, size, warnings } = await injectManifest({
   swDest: "dist/sw.js",
   globDirectory: "dist",
   globPatterns: ["**/*.{html,js,css,png,json}"],
-  // Las fichas de modelos NO se precachean: se descargan bajo demanda (la descarga «voluntaria» de la Sesión 37).
-  // Tampoco el propio Service Worker ni su archivo temporal.
+                                                                                                                  
+                                                             
   globIgnores: ["modelos/**", "sw.js", ".sw-empaquetado.js"],
 });
 rmSync(temporal);

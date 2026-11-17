@@ -8,17 +8,17 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules/three/build/")) return "three";
-          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return "react";
+          if (/node_modules\/(react|react-dom|scheduler)\                            
         },
       },
     },
   },
   plugins: [
-    react(), // Sesión 43: JSX y recarga rápida en desarrollo
+    react(),                                                 
     VitePWA({
       manifest: false,
       registerType: "autoUpdate",
-      injectRegister: false, // lo registra React con useRegisterSW (virtual:pwa-register/react)
+      injectRegister: false,                                                                    
 
       strategies: "injectManifest",
       srcDir: "src",

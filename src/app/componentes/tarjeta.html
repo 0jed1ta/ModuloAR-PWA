@@ -2,6 +2,7 @@
 <p class="resumen-card">{{ modelo().resumen }}</p>
 <p class="meta">
   Última visita: {{ ultimaVisita() }}
+  · Visitado {{ progreso()?.visitas || 0 }} veces
   @if (descargado()) { · <span class="disponible">✓ disponible sin conexión</span> }
 </p>
 <div class="acciones">

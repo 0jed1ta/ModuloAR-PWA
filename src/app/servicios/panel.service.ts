@@ -1,5 +1,5 @@
-// PanelService — Sesión 44. Qué modelo y qué pieza están elegidos, y la ficha ampliada del modelo.
-// Es el estado que en la Sesión 40 vivía en tres variables sueltas y en seis funciones que reescribían HTML.
+                                                                                                   
+                                                                                                             
 import { Injectable, computed, effect, inject, signal, untracked } from "@angular/core";
 import { CATALOGO, modeloPorId } from "../../modelos";
 import { leerFicha } from "../../descargas";
@@ -22,7 +22,7 @@ export class PanelService {
   });
 
   constructor() {
-    // Al llegar el visor: el primer modelo. Y cuando el usuario toca una pieza en la vista 3D, el visor avisa.
+                                                                                                               
     effect(() => {
       const visor = this.visorSvc.visor();
       if (!visor) return;
@@ -32,10 +32,10 @@ export class PanelService {
       });
     });
 
-    // La ficha ampliada llega de la caché (sin conexión) o de la red; si no hay ninguna, se usa solo el código.
+                                                                                                                
     effect((alLimpiar) => {
       const id = this.modeloId();
-      let vigente = true; // si cambias de modelo antes de que llegue, la respuesta vieja se descarta
+      let vigente = true;                                                                            
       alLimpiar(() => (vigente = false));
       void leerFicha(id).then((datos) => {
         if (vigente) this.fichaCargada.set({ id, datos });
@@ -43,7 +43,7 @@ export class PanelService {
     });
   }
 
-  // Un manejador de eventos habla con el visor (imperativo) y actualiza el estado (declarativo).
+                                                                                                 
   elegirModelo(id: string): void {
     const def = modeloPorId(id);
     const visor = this.visorSvc.visor();
@@ -58,7 +58,7 @@ export class PanelService {
     this.piezaId.set(id);
   }
 
-  /** ◀ ▶ del overlay AR: ninguna → 1.ª → 2.ª … → ninguna. */
+                                                             
   recorrerPiezas(paso: number): void {
     const ids: (string | null)[] = [null, ...this.def().piezas.map((p) => p.id)];
     const i = ids.indexOf(this.piezaId());

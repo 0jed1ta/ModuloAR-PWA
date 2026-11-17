@@ -1,0 +1,15 @@
+{
+  "id": "hexagonal",
+  "nombre": "Puertos y adaptadores",
+  "resumen": "El dominio se mantiene independiente mediante puertos y adaptadores.",
+  "cuando_usarlo": "Cuando las reglas de negocio deben sobrevivir a cambios de interfaz, base de datos o integraciones.",
+  "riesgo": "Crear interfaces innecesarias para sistemas pequeños y aumentar la cantidad de código ceremonial.",
+  "piezas": {
+    "usuario": { "responsabilidad": "Iniciar una interacción.", "habla_con": ["web"] },
+    "web": { "responsabilidad": "Convertir HTTP en llamadas al puerto de entrada.", "habla_con": ["entrada"] },
+    "entrada": { "responsabilidad": "Definir los casos de uso disponibles.", "habla_con": ["dominio"] },
+    "dominio": { "responsabilidad": "Aplicar reglas de negocio.", "habla_con": ["salida"] },
+    "salida": { "responsabilidad": "Definir lo que el dominio necesita del exterior.", "habla_con": ["persistencia"] },
+    "persistencia": { "responsabilidad": "Guardar y recuperar información.", "habla_con": [] }
+  }
+}

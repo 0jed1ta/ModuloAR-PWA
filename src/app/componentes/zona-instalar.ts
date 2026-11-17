@@ -1,4 +1,4 @@
-// ZonaInstalar — Sesión 44. «Instalar la app»: el estado lo decide instalar.ts; el servicio lo trae.
+                                                                                                     
 import { Component, inject, signal } from "@angular/core";
 import { InstalacionService } from "../servicios/instalacion.service";
 
@@ -14,7 +14,7 @@ export class ZonaInstalar {
   protected async alPulsar(): Promise<void> {
     this.pidiendo.set(true);
     try {
-      await this.inst.pedir(); // el resultado llega por el servicio: no hay que pintar nada aquí
+      await this.inst.pedir();                                                                   
     } finally {
       this.pidiendo.set(false);
     }

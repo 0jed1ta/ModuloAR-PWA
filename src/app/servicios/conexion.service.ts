@@ -1,7 +1,7 @@
-// ConexionService — Sesión 44. Convierte conexion.ts (eventos online/offline) en una señal:
-// el texto de la banda, o null si no hay banda que mostrar. (En React era el hook useConexion.)
+                                                                                            
+                                                                                                
 import { DestroyRef, Injectable, inject, signal } from "@angular/core";
-import { iniciarConexion } from "../../conexion";
+import { comprobarRed, iniciarConexion } from "../../conexion";
 
 @Injectable({ providedIn: "root" })
 export class ConexionService {
@@ -16,14 +16,21 @@ export class ConexionService {
         estuvoSinConexion = true;
         this.texto.set("Sin conexión: los modelos y las fichas descargadas siguen disponibles.");
       } else if (estuvoSinConexion) {
-        estuvoSinConexion = false;
-        this.texto.set("Volvió la conexión.");
-        temporizador = window.setTimeout(() => this.texto.set(null), 3000);
+        this.texto.set("Comprobando acceso al servidor…");
+        void comprobarRed().then((estado) => {
+          if (estado === "llega") {
+            estuvoSinConexion = false;
+            this.texto.set("Volvió la conexión y el servidor responde.");
+            temporizador = window.setTimeout(() => this.texto.set(null), 3000);
+          } else {
+            this.texto.set("Hay red local, pero el servidor no responde. El contenido descargado sigue disponible.");
+          }
+        });
       } else {
         this.texto.set(null);
       }
     });
-    // La limpieza vive en DestroyRef: se ejecuta cuando Angular destruye este servicio.
+                                                                                        
     inject(DestroyRef).onDestroy(() => {
       dejarDeEscuchar();
       window.clearTimeout(temporizador);

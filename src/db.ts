@@ -1,5 +1,12 @@
+// db.ts — envoltorio en promesas de IndexedDB para el progreso del Atlas 3D.
+// Mismo patrón de la Sesión 22 (Gestor de Tareas), reescrito aquí con los
+// nombres reales del Atlas 3D — sin cambiar cómo funciona por dentro.
+// Sesión 33, sección 2 y 3.
 
 const NOMBRE_DB = "atlas3d-progreso-db";
+// Versión 2 (Sesión 37): se agrega el almacén "descargas" (cola de modelos para usar sin conexión).
+// Versión 3 (Sesión 40): los modelos de prueba (modelo-demo-1..3) pasan a tener nombre real
+// (mvc, capas, microservicios). La migración RENOMBRA los registros para no perder favoritos ni notas.
 const VERSION_DB = 3;
 
 /** Sesión 40: correspondencia entre los identificadores viejos y los nuevos. */
@@ -37,6 +44,8 @@ export function abrirBaseDeDatos(): Promise<IDBDatabase> {
 
     peticion.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      // Migración por tramos (Sesión 22/26): quien viene de la v1 conserva su
+      // progreso y solo recibe lo nuevo.
       if (event.oldVersion < 1) {
         const store = db.createObjectStore("progreso", { keyPath: "modeloId" });
         store.createIndex("porFavorito", "favorito", { unique: false });
@@ -46,6 +55,8 @@ export function abrirBaseDeDatos(): Promise<IDBDatabase> {
         db.createObjectStore("descargas", { keyPath: "modeloId" });
       }
       if (event.oldVersion >= 1 && event.oldVersion < 3) {
+        // La clave de un registro no se puede cambiar: se lee cada registro viejo, se escribe
+        // con la clave nueva y se borra el viejo, todo dentro de la transacción de la migración.
         const tx = (event.target as IDBOpenDBRequest).transaction!;
         migrarIdentificadores(tx.objectStore("progreso"), false);
         migrarIdentificadores(tx.objectStore("descargas"), true);
@@ -152,6 +163,7 @@ export async function guardarNotaDeEstudio(
   });
 }
 
+// ── Sesión 37: cola de descargas para uso sin conexión ─────────────────────
 export interface Descarga {
   modeloId: string;
   estado: "pendiente" | "listo";

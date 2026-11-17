@@ -1,3 +1,7 @@
+// visor.ts — escena de Three.js del Atlas 3D (Sesiones 35-40).
+// Hasta la Sesión 39 el visor mostraba un CUBO DE PRUEBA. Desde la Sesión 40
+// muestra los modelos de arquitectura (MVC, capas, microservicios): escenas
+// construidas por código a partir de datos (carpeta modelos/).
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { capacidadesDe, type CapacidadesAR } from "./xr";
@@ -86,6 +90,8 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   luz.position.set(3, 4, 5);
   escena.add(luz);
 
+  // Dos niveles: `raiz` sigue a la superficie o al ancla (lo manda el sistema);
+  // `grupo` es el objeto con lo que decide el usuario (mover, girar, escalar).
   const raiz = new THREE.Group();
   const grupo = new THREE.Group();
   grupo.scale.setScalar(ESCALA_VISTA);
@@ -102,6 +108,8 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   let objetivoY = 0;
   let porSensores = false;
 
+  // Sesión 42 (hallazgo de Lighthouse): dibujar 60 veces por segundo una escena QUIETA gasta batería y
+  // ocupa el hilo principal. Se dibuja solo si algo cambió: «sucio» lo anota quien cambia algo.
   let sucio = true;
 
   function ajustarTamano() {
@@ -119,6 +127,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   function bucle() {
     animacion = requestAnimationFrame(bucle);
     if (porSensores) {
+      // Interpolación: alcanza el objetivo poco a poco (filtra el temblor del sensor).
       grupo.rotation.x += (objetivoX - grupo.rotation.x) * 0.15;
       grupo.rotation.y += (objetivoY - grupo.rotation.y) * 0.15;
       sucio = true; // con sensores la escena se mueve sola
@@ -131,6 +140,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   }
   bucle();
 
+  // ── Sesiones 38-39: modo AR ─────────────────────────────────────────────
   let sesionAR: XRSession | null = null;
 
   async function entrarEnAR(sesion: XRSession, opciones: OpcionesAR): Promise<EstadoAR> {
@@ -147,6 +157,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     controles.enabled = false;
     if (modelo) modelo.raiz.position.y = 0; // en AR el modelo apoya su BASE en la superficie
 
+    // ── Estado de la colocación ──
     let fase: FaseAR = caps.hitTest ? "buscando" : "colocado";
     let ancla: XRAnchor | null = null;
     let escala = ESCALA_INICIAL;
@@ -175,11 +186,13 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     };
     const avisar = () => opciones.alCambiar(estado());
 
+    // `raiz` deja de calcular su matriz sola: se la damos nosotros desde la superficie o el ancla.
     raiz.matrixAutoUpdate = false;
     grupo.position.set(0, MITAD * escala, 0); // la base apoya en la superficie
     grupo.scale.setScalar(escala);
     grupo.rotation.set(0, 0, 0);
 
+    // Retícula: un anillo verde que se pega a la superficie que el hit-test encuentra.
     const reticula = new THREE.Mesh(
       new THREE.RingGeometry(0.1, 0.13, 40).rotateX(-Math.PI / 2), // acostado: su cara mira hacia arriba
       new THREE.MeshBasicMaterial({ color: 0x4ade80 })
@@ -188,17 +201,21 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     reticula.visible = false;
     escena.add(reticula);
 
+    // Sin hit-test no hay superficie que buscar: el cubo se coloca delante, como en la Sesión 38.
     if (fase === "colocado") {
       raiz.matrix.makeTranslation(0, -0.5, -1.5);
     } else {
       raiz.visible = false; // hasta que el usuario toque, solo se ve la retícula
     }
 
+    // ── Hit-test: un rayo desde el centro de la pantalla («viewer») ──
     let fuente: XRHitTestSource | null = null;
     if (caps.hitTest) {
       try {
         const espacioViewer = await sesion.requestReferenceSpace("viewer");
         try {
+          // «plane» exige que el sistema haya reconocido un plano (tarda y falla en superficies lisas);
+          // «point» acepta también puntos de característica sueltos: el anillo sale casi de inmediato.
           fuente = (await sesion.requestHitTestSource?.({ space: espacioViewer, entityTypes: ["plane", "point"] })) ?? null;
         } catch {
           fuente = (await sesion.requestHitTestSource?.({ space: espacioViewer })) ?? null; // el navegador no admite «point»
@@ -214,6 +231,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
       }
     }
 
+    // ── Colocar al tocar ──
     let turno = 0; // numera los toques: si llegan dos seguidos, solo vale el último
     async function colocar(frame: XRFrame) {
       const referencia = renderer.xr.getReferenceSpace();
@@ -226,6 +244,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
         impacto = ultimoImpacto;
         raiz.matrix.copy(reticula.matrix); // el cubo aparece donde está la retícula
       } else {
+        // Plan B (sin hit-test, o sin superficie tras varios segundos): delante de la mirada actual, a 1,5 m.
         const posicion = new THREE.Vector3().setFromMatrixPosition(camara.matrixWorld);
         const delante = camara.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
         posicion.addScaledVector(delante, 1.5);
@@ -235,6 +254,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
       grupo.position.set(0, MITAD * escala, 0); // vuelve al centro de la nueva posición
       raiz.visible = true;
       fase = "colocado";
+      // ── Ancla: el sistema recuerda ESE punto del mundo real y lo sigue corrigiendo ──
       ancla?.delete(); // al volver a colocar, la ancla anterior ya no sirve
       ancla = null;
       avisar();
@@ -250,12 +270,14 @@ export function crearVisor(contenedor: HTMLElement): Visor {
       }
     }
 
+    // ── Gestos: mover (un dedo), girar y escalar (dos dedos) ──
     const rayo = new THREE.Raycaster();
     const plano = new THREE.Plane();
     const desfase = new THREE.Vector2();
     const tmp = new THREE.Vector3();
     function mover(clientX: number, clientY: number, primero: boolean) {
       if (fase !== "colocado") return;
+      // Pantalla → rayo → punto donde ese rayo corta el plano de la superficie.
       rayo.setFromCamera(new THREE.Vector2((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1), camara);
       raiz.updateMatrixWorld(true);
       const normal = new THREE.Vector3(0, 1, 0).transformDirection(raiz.matrixWorld);
@@ -263,6 +285,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
       const punto = rayo.ray.intersectPlane(plano, new THREE.Vector3());
       if (!punto) return; // el rayo no baja hasta el plano (miras al cielo)
       const local = raiz.worldToLocal(punto);
+      // En el primer movimiento se recuerda a cuánto del centro del objeto tocó el dedo, para que no salte.
       if (primero) desfase.set(grupo.position.x - local.x, grupo.position.z - local.z);
       grupo.position.x = local.x + desfase.x;
       grupo.position.z = local.z + desfase.y;
@@ -289,6 +312,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
       void colocar((ev as XRInputSourceEvent).frame);
     });
 
+    // ── Bucle: cada fotograma XR ──
     let cuadro = 0; // cuenta fotogramas para consultar el hit-test solo uno de cada dos
     let sinImpacto = 0; // consultas seguidas sin superficie
     renderer.setAnimationLoop((_t, frame) => {
@@ -313,6 +337,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
               avisar();
             }
           } else if (++sinImpacto >= CONSULTAS_SIN_IMPACTO) {
+            // Una superficie que aparece y desaparece cada fotograma haría parpadear el texto del overlay.
             reticula.visible = false;
             ultimoImpacto = null;
             if (fase === "listo") {
@@ -325,6 +350,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
             avisar();
           }
         }
+        // Con ancla, la posición de `raiz` la corrige el sistema fotograma a fotograma.
         if (ancla && frame.trackedAnchors?.has(ancla)) {
           const poseAncla = frame.getPose(ancla.anchorSpace, referencia);
           if (poseAncla) raiz.matrix.fromArray(poseAncla.transform.matrix);
@@ -337,6 +363,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     sesion.addEventListener(
       "end",
       () => {
+        // Cada paso se anota ANTES de hacerlo: si la pestaña muere, el último nombre dice dónde.
         anotar("fin-1-bucle");
         renderer.setAnimationLoop(null);
         renderer.xr.enabled = false;
@@ -360,6 +387,8 @@ export function crearVisor(contenedor: HTMLElement): Visor {
         if (modelo) modelo.raiz.position.y = -centroY;
         grupo.rotation.set(0, 0, 0);
         opciones.alTerminar();
+        // El primer fotograma normal NO se dibuja en el mismo instante en que el navegador desmonta
+        // la cámara y el visor XR: se espera un momento para que termine de soltar sus recursos.
         anotar("fin-5-espera");
         window.setTimeout(() => {
           anotar("fin-6-tamano");
@@ -377,6 +406,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
     return estado();
   }
 
+  // ── Sesión 40: elegir una pieza tocándola (solo fuera de AR) ──
   const rayoToque = new THREE.Raycaster();
   let avisarToque: ((id: string | null) => void) | null = null;
   let inicioToque: { x: number; y: number; t: number } | null = null;
@@ -387,6 +417,7 @@ export function crearVisor(contenedor: HTMLElement): Visor {
   const alSoltar = (ev: PointerEvent) => {
     const ini = inicioToque;
     inicioToque = null;
+    // Un arrastre (girar la vista) no es un toque: se mide cuánto se movió el dedo.
     if (!ini || sesionAR || !modelo) return;
     if (Math.hypot(ev.clientX - ini.x, ev.clientY - ini.y) > 8 || performance.now() - ini.t > 600) return;
     const caja = lienzo.getBoundingClientRect();

@@ -1,3 +1,7 @@
+// instalar.ts — experiencia de instalación del Atlas 3D (Sesión 41).
+// Chrome decide CUÁNDO una PWA es instalable y avisa con el evento «beforeinstallprompt».
+// Ese evento se puede guardar y usar más tarde, dentro de un clic del usuario: así el
+// botón «Instalar» aparece solo cuando instalar es posible, y no antes.
 
 /** El evento no está en los tipos estándar de TypeScript: se declara lo que se usa. */
 interface EventoInstalacion extends Event {
@@ -19,6 +23,7 @@ let avisar: () => void = () => {};
 
 /** ¿La página se está mostrando como app instalada? */
 export function estaInstalada(): boolean {
+  // Android/escritorio: el modo de visualización del manifest. iOS: la propiedad no estándar «standalone».
   return window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
@@ -45,6 +50,7 @@ export function instalacionRechazada(): boolean {
 export function iniciarInstalacion(alCambiar: () => void): () => void {
   avisar = alCambiar;
   const alOfrecer = (e: Event) => {
+    // Sin esto, Chrome móvil muestra su propia barrita de «Instalar». Se guarda para usarlo en NUESTRO botón.
     e.preventDefault();
     evento = e as EventoInstalacion;
     rechazada = false;
@@ -55,12 +61,14 @@ export function iniciarInstalacion(alCambiar: () => void): () => void {
     recienInstalada = true;
     avisar();
   };
+  // Cambiar entre pestaña del navegador y ventana de app también cambia el modo de visualización.
   const modo = window.matchMedia("(display-mode: standalone)");
   const alCambiarModo = () => avisar();
   window.addEventListener("beforeinstallprompt", alOfrecer);
   window.addEventListener("appinstalled", alInstalar);
   modo.addEventListener("change", alCambiarModo);
   avisar();
+  // Sesión 43: en React todo efecto que empieza algo debe saber deshacerlo.
   return () => {
     window.removeEventListener("beforeinstallprompt", alOfrecer);
     window.removeEventListener("appinstalled", alInstalar);

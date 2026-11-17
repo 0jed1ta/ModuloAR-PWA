@@ -1,3 +1,7 @@
+// camara.ts — cámara del dispositivo como fondo del visor (Sesión 36).
+// Los errores y constraints de getUserMedia se vieron a fondo en la Sesión 24;
+// aquí solo cambia la DURACIÓN: la cámara queda abierta mientras se usa el visor.
+
 export async function iniciarCamaraDeFondo(video: HTMLVideoElement): Promise<MediaStream> {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -13,11 +17,21 @@ export function detenerCamaraDeFondo(video: HTMLVideoElement, stream: MediaStrea
   video.srcObject = null;
 }
 
-export function describirErrorCamara(error: unknown): string {
-  const nombre = error instanceof Error ? error.name : "";
-  if (nombre === "NotAllowedError") return "Permiso de cámara denegado. Puedes cambiarlo en los ajustes del sitio.";
-  if (nombre === "NotFoundError") return "No se encontró ninguna cámara en este dispositivo.";
-  if (nombre === "NotReadableError") return "La cámara está en uso por otra aplicación.";
-  if (nombre === "SecurityError" || nombre === "TypeError") return "La cámara requiere HTTPS o localhost.";
-  return "No se pudo abrir la cámara. Revisa los permisos e inténtalo de nuevo.";
+/** Traduce el error de getUserMedia a un mensaje que dice qué pasó y qué hacer. */
+export function describirErrorCamara(err: unknown): string {
+  const nombre = err instanceof Error ? err.name : "";
+  switch (nombre) {
+    case "NotAllowedError":
+      return "Permiso de cámara denegado. Puedes cambiarlo en los ajustes del sitio del navegador.";
+    case "NotFoundError":
+      return "No se encontró ninguna cámara en este dispositivo.";
+    case "NotReadableError":
+      return "La cámara está en uso por otra aplicación. Ciérrala e inténtalo de nuevo.";
+    case "SecurityError":
+      return "El navegador tiene deshabilitado el acceso a la cámara en esta página.";
+    case "TypeError":
+      return "La cámara solo está disponible en páginas seguras (HTTPS o localhost).";
+    default:
+      return "No se pudo abrir la cámara. Revisa los permisos e inténtalo de nuevo.";
+  }
 }

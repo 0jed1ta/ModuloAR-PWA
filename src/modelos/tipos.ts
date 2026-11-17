@@ -1,3 +1,8 @@
+// tipos.ts — cómo se DESCRIBE un modelo de arquitectura (Sesión 40).
+// Un modelo no es un archivo 3D: es una lista de piezas y de enlaces entre
+// ellas. Un constructor genérico (constructor.ts) convierte esa descripción
+// en objetos de Three.js. Así, agregar un patrón nuevo es escribir datos,
+// no geometría.
 
 /** Qué responsabilidad cumple una pieza: decide su color y la leyenda. */
 export type Rol = "actor" | "presentacion" | "coordinacion" | "logica" | "datos" | "infra";

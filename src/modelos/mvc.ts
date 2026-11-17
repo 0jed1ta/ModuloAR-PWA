@@ -1,3 +1,4 @@
+// mvc.ts — Modelo-Vista-Controlador como DATOS (Sesión 40).
 import type { DefinicionModelo } from "./tipos";
 
 export const MVC: DefinicionModelo = {

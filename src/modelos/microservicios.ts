@@ -1,3 +1,4 @@
+// microservicios.ts — Microservicios como DATOS (Sesión 40).
 import type { DefinicionModelo } from "./tipos";
 
 export const MICROSERVICIOS: DefinicionModelo = {

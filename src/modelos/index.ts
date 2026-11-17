@@ -1,3 +1,4 @@
+// index.ts — catálogo de modelos del Atlas 3D (Sesión 40).
 import type { DefinicionModelo } from "./tipos";
 import { MVC } from "./mvc";
 import { CAPAS } from "./capas";

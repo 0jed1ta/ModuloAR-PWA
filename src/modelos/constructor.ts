@@ -1,3 +1,9 @@
+// constructor.ts — convierte una DefinicionModelo en objetos de Three.js (Sesión 40).
+// Piezas = mallas con el color de su rol; enlaces = flechas (cilindro + cono)
+// que salen del BORDE de una pieza y llegan al borde de otra; rótulos = sprites
+// con texto dibujado en un canvas. Al final todo se normaliza: el modelo entra en
+// una caja de 1,6 y su base queda en y = -0,8, igual que el cubo de las Sesiones 35-39,
+// así la lógica de AR (apoyar la base en la superficie) no cambia.
 import * as THREE from "three";
 import { COLOR_ENLACE, ROLES, type DefinicionModelo, type Enlace, type Pieza } from "./tipos";
 
@@ -20,6 +26,7 @@ interface FlechaConstruida {
   materiales: THREE.MeshBasicMaterial[];
 }
 
+// ── Rótulos: texto dibujado en un canvas y pegado a un Sprite ──
 function crearRotulo(texto: string, altura: number, pequeno = false): THREE.Sprite {
   const px = pequeno ? 40 : 56;
   const lienzo = document.createElement("canvas");
@@ -47,6 +54,7 @@ function crearRotulo(texto: string, altura: number, pequeno = false): THREE.Spri
   return sprite;
 }
 
+// ── Dónde sale y dónde llega una flecha: el punto del borde de la pieza en esa dirección ──
 function puntoDeBorde(p: Pieza, centro: THREE.Vector3, dir: THREE.Vector3): THREE.Vector3 {
   const [w, h, d] = p.tam;
   let t: number;
@@ -100,6 +108,7 @@ function crearFlecha(e: Enlace, de: Pieza, a: Pieza, destino: THREE.Group, k: nu
 
   if (e.etiqueta) {
     const medio = inicio.clone().add(fin).multiplyScalar(0.5);
+    // Una flecha casi vertical lleva su rótulo al lado; una horizontal, encima.
     if (Math.abs(dir.y) > 0.7) medio.x += 0.7 * k * Math.sign(desvio.x || 1);
     else medio.y += 0.3 * k;
     const rotulo = crearRotulo(e.etiqueta, 0.3 * k, true);
@@ -141,6 +150,7 @@ export function construirModelo(def: DefinicionModelo): ModeloConstruido {
     decorado.add(rotulo);
   }
 
+  // Base: una placa oscura bajo todo el modelo, para que «apoye» en algo.
   const caja = new THREE.Box3().setFromObject(solido);
   const base = new THREE.Mesh(
     new THREE.BoxGeometry(caja.max.x - caja.min.x + 1.4, 0.14, caja.max.z - caja.min.z + 1.4),
@@ -158,6 +168,7 @@ export function construirModelo(def: DefinicionModelo): ModeloConstruido {
     if (f) flechas.push(f);
   }
 
+  // Normalizar: caber en TAM_NORMALIZADO, centrado en x/z y con la base en y = -TAM/2.
   const medida = new THREE.Box3().setFromObject(solido);
   const tamano = medida.getSize(new THREE.Vector3());
   const centro = medida.getCenter(new THREE.Vector3());

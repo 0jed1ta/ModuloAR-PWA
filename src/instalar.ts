@@ -41,22 +41,32 @@ export function instalacionRechazada(): boolean {
   return rechazada;
 }
 
-/** Empieza a escuchar. «alCambiar» se llama cada vez que el estado puede haber cambiado. */
-export function iniciarInstalacion(alCambiar: () => void): void {
+/** Empieza a escuchar. «alCambiar» se llama cada vez que el estado puede haber cambiado. Devuelve cómo dejar de escuchar. */
+export function iniciarInstalacion(alCambiar: () => void): () => void {
   avisar = alCambiar;
-  window.addEventListener("beforeinstallprompt", (e) => {
+  const alOfrecer = (e: Event) => {
     e.preventDefault();
     evento = e as EventoInstalacion;
     rechazada = false;
     avisar();
-  });
-  window.addEventListener("appinstalled", () => {
+  };
+  const alInstalar = () => {
     evento = null; // ya no sirve
     recienInstalada = true;
     avisar();
-  });
-  window.matchMedia("(display-mode: standalone)").addEventListener("change", () => avisar());
+  };
+  const modo = window.matchMedia("(display-mode: standalone)");
+  const alCambiarModo = () => avisar();
+  window.addEventListener("beforeinstallprompt", alOfrecer);
+  window.addEventListener("appinstalled", alInstalar);
+  modo.addEventListener("change", alCambiarModo);
   avisar();
+  return () => {
+    window.removeEventListener("beforeinstallprompt", alOfrecer);
+    window.removeEventListener("appinstalled", alInstalar);
+    modo.removeEventListener("change", alCambiarModo);
+    avisar = () => {};
+  };
 }
 
 /** Abre el diálogo del sistema. Solo funciona dentro de un clic y una sola vez por evento. */

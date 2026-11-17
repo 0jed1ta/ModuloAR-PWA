@@ -1,3 +1,4 @@
+// capas.ts — Arquitectura en capas como DATOS (Sesión 40).
 import type { DefinicionModelo } from "./tipos";
 
 export const CAPAS: DefinicionModelo = {

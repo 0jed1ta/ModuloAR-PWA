@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  DestroyRef,
   afterNextRender,
   inject,
   viewChild,
@@ -23,6 +24,9 @@ export class ZonaVisor {
   protected readonly camara = inject(CamaraService);
   protected readonly ar = inject(ARService);
 
+  private temporizadorVisor = 0;
+  private identificadorIdle = 0;
+
   private readonly contenedor =
     viewChild.required<ElementRef<HTMLDivElement>>("contenedor");
   private readonly video =
@@ -31,7 +35,28 @@ export class ZonaVisor {
   constructor() {
     afterNextRender(() => {
       this.camara.registrarVideo(this.video().nativeElement);
-      this.visorSvc.montar(this.contenedor().nativeElement);
+
+      const montar = () => {
+        this.temporizadorVisor = 0;
+        void this.visorSvc.montar(this.contenedor().nativeElement);
+      };
+
+      if (typeof window.requestIdleCallback === "function") {
+        this.identificadorIdle = window.requestIdleCallback(montar, {
+          timeout: 2500,
+        });
+      } else {
+        this.temporizadorVisor = window.setTimeout(montar, 1200);
+      }
+    });
+
+    inject(DestroyRef).onDestroy(() => {
+      if (this.identificadorIdle && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(this.identificadorIdle);
+      }
+      if (this.temporizadorVisor) {
+        window.clearTimeout(this.temporizadorVisor);
+      }
     });
   }
 

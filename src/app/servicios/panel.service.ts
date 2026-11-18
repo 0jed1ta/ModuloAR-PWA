@@ -9,6 +9,7 @@ import {
 import { CATALOGO, modeloPorId } from "../../modelos";
 import { leerFicha } from "../../descargas";
 import type { Ficha } from "../../modelos/tipos";
+import { RESUMENES_FICHAS } from "../../modelos/resumenes";
 import { VisorService } from "./visor.service";
 
 @Injectable({ providedIn: "root" })
@@ -28,7 +29,9 @@ export class PanelService {
   );
   readonly ficha = computed(() => {
     const f = this.fichaCargada();
-    return f?.id === this.modeloId() ? f.datos : null;
+    return f?.id === this.modeloId() && f.datos
+      ? f.datos
+      : RESUMENES_FICHAS[this.modeloId()] ?? null;
   });
 
   constructor() {

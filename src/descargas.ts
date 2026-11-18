@@ -1,35 +1,30 @@
-                                                                        
-                                                                      
-                                                                          
-                                                                       
-                                                                                
 import { obtenerDescargas, marcarDescargaLista } from "./db";
 import type { Ficha } from "./modelos/tipos";
 import { BASE_URL } from "./base";
 
 export const ETIQUETA_SYNC = "descargar-modelos";
 export const CACHE_MODELOS = "modelos-3d";
-                                                                                                           
+
 export const urlDeModelo = (id: string) => `${BASE_URL}modelos/${id}.json`;
 
-export type AlProgresar = (hechos: number, total: number) => void | Promise<void>;
+export type AlProgresar = (
+  hechos: number,
+  total: number,
+) => void | Promise<void>;
 
-/**
- * Descarga, una por una, las fichas que están «pendiente». Si una falla LANZA:
- * las anteriores ya quedaron marcadas como «listo» (no se vuelven a pedir) y
- * el navegador reintentará solo las que faltan.
- * Devuelve cuántas se descargaron en esta pasada.
- */
-export async function descargarPendientes(db: IDBDatabase, alProgresar: AlProgresar): Promise<number> {
+export async function descargarPendientes(
+  db: IDBDatabase,
+  alProgresar: AlProgresar,
+): Promise<number> {
   const todas = await obtenerDescargas(db);
   const total = todas.length;
   let hechos = todas.filter((d) => d.estado === "listo").length;
   const cache = await caches.open(CACHE_MODELOS);
   let descargadas = 0;
   for (const d of todas.filter((x) => x.estado === "pendiente")) {
-    // cache: "reload" evita que la caché HTTP del navegador responda por la red.
     const resp = await fetch(urlDeModelo(d.modeloId), { cache: "reload" });
-    if (!resp.ok) throw new Error(`${d.modeloId}: el servidor respondió ${resp.status}`);
+    if (!resp.ok)
+      throw new Error(`${d.modeloId}: el servidor respondió ${resp.status}`);
     await cache.put(urlDeModelo(d.modeloId), resp);
     await marcarDescargaLista(db, d.modeloId);
     hechos++;
@@ -39,24 +34,15 @@ export async function descargarPendientes(db: IDBDatabase, alProgresar: AlProgre
   return descargadas;
 }
 
-/**
- * Sesión 40: lee la ficha ampliada de un modelo. Primero mira la caché (sirve sin conexión);
- * si no está, la pide a la red; si tampoco hay red, devuelve null y la app usa solo lo que
- * viaja en el código (el resumen de cada pieza).
- */
 export async function leerFicha(id: string): Promise<Ficha | null> {
   try {
     const cache = await caches.open(CACHE_MODELOS);
     const guardada = await cache.match(urlDeModelo(id));
     if (guardada) return (await guardada.json()) as Ficha;
-  } catch {
-    /* sin Cache Storage: se intenta la red */
-  }
+  } catch {}
   try {
     const resp = await fetch(urlDeModelo(id));
     if (resp.ok) return (await resp.json()) as Ficha;
-  } catch {
-    /* sin red */
-  }
+  } catch {}
   return null;
 }

@@ -23,8 +23,16 @@ export class App {
     const sw = inject(SwService);
     afterNextRender(() => sw.iniciar());
 
-    const alInstalar = () => void mostrarAviso("Atlas 3D instalado", "Ya puedes abrirlo desde tu pantalla de inicio.", BASE_URL, "atlas-instalado");
+    const alInstalar = () =>
+      void mostrarAviso(
+        "Atlas 3D instalado",
+        "Ya puedes abrirlo desde tu pantalla de inicio.",
+        BASE_URL,
+        "atlas-instalado",
+      );
     window.addEventListener("appinstalled", alInstalar);
-    inject(DestroyRef).onDestroy(() => window.removeEventListener("appinstalled", alInstalar));
+    inject(DestroyRef).onDestroy(() =>
+      window.removeEventListener("appinstalled", alInstalar),
+    );
   }
 }

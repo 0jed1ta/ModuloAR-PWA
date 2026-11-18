@@ -1,6 +1,11 @@
-                                                                                                   
-                                                                                                             
-import { Injectable, computed, effect, inject, signal, untracked } from "@angular/core";
+import {
+  Injectable,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from "@angular/core";
 import { CATALOGO, modeloPorId } from "../../modelos";
 import { leerFicha } from "../../descargas";
 import type { Ficha } from "../../modelos/tipos";
@@ -12,17 +17,21 @@ export class PanelService {
 
   readonly modeloId = signal(CATALOGO[0].id);
   readonly piezaId = signal<string | null>(null);
-  private readonly fichaCargada = signal<{ id: string; datos: Ficha | null } | null>(null);
+  private readonly fichaCargada = signal<{
+    id: string;
+    datos: Ficha | null;
+  } | null>(null);
 
   readonly def = computed(() => modeloPorId(this.modeloId())!);
-  readonly pieza = computed(() => this.def().piezas.find((p) => p.id === this.piezaId()));
+  readonly pieza = computed(() =>
+    this.def().piezas.find((p) => p.id === this.piezaId()),
+  );
   readonly ficha = computed(() => {
     const f = this.fichaCargada();
     return f?.id === this.modeloId() ? f.datos : null;
   });
 
   constructor() {
-                                                                                                               
     effect(() => {
       const visor = this.visorSvc.visor();
       if (!visor) return;
@@ -32,10 +41,9 @@ export class PanelService {
       });
     });
 
-                                                                                                                
     effect((alLimpiar) => {
       const id = this.modeloId();
-      let vigente = true;                                                                            
+      let vigente = true;
       alLimpiar(() => (vigente = false));
       void leerFicha(id).then((datos) => {
         if (vigente) this.fichaCargada.set({ id, datos });
@@ -43,7 +51,6 @@ export class PanelService {
     });
   }
 
-                                                                                                 
   elegirModelo(id: string): void {
     const def = modeloPorId(id);
     const visor = this.visorSvc.visor();
@@ -58,9 +65,11 @@ export class PanelService {
     this.piezaId.set(id);
   }
 
-                                                             
   recorrerPiezas(paso: number): void {
-    const ids: (string | null)[] = [null, ...this.def().piezas.map((p) => p.id)];
+    const ids: (string | null)[] = [
+      null,
+      ...this.def().piezas.map((p) => p.id),
+    ];
     const i = ids.indexOf(this.piezaId());
     this.elegirPieza(ids[(i + paso + ids.length) % ids.length]);
   }

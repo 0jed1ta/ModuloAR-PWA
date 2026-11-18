@@ -1,7 +1,9 @@
-                                                                                                  
-                                                                                                   
 import { DestroyRef, Injectable, inject, signal } from "@angular/core";
-import { describirErrorCamara, detenerCamaraDeFondo, iniciarCamaraDeFondo } from "../../camara";
+import {
+  describirErrorCamara,
+  detenerCamaraDeFondo,
+  iniciarCamaraDeFondo,
+} from "../../camara";
 import { VisorService } from "./visor.service";
 
 @Injectable({ providedIn: "root" })
@@ -13,15 +15,18 @@ export class CamaraService {
   readonly activa = signal(false);
 
   constructor() {
-                                                                                 
     const alCambiarVisibilidad = () => {
       if (document.hidden && this.stream) {
         this.apagar();
-        this.visorSvc.aviso.set("La cámara se apagó al salir de la página. Vuelve a activarla cuando quieras.");
+        this.visorSvc.aviso.set(
+          "La cámara se apagó al salir de la página. Vuelve a activarla cuando quieras.",
+        );
       }
     };
     document.addEventListener("visibilitychange", alCambiarVisibilidad);
-    inject(DestroyRef).onDestroy(() => document.removeEventListener("visibilitychange", alCambiarVisibilidad));
+    inject(DestroyRef).onDestroy(() =>
+      document.removeEventListener("visibilitychange", alCambiarVisibilidad),
+    );
   }
 
   registrarVideo(video: HTMLVideoElement): void {
@@ -42,7 +47,6 @@ export class CamaraService {
     }
     this.visorSvc.aviso.set("");
     try {
-                                                                           
       this.stream = await iniciarCamaraDeFondo(this.video!);
     } catch (err) {
       this.visorSvc.aviso.set(describirErrorCamara(err));

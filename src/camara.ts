@@ -1,10 +1,12 @@
-                                                                       
-                                                                               
-                                                                                  
-
-export async function iniciarCamaraDeFondo(video: HTMLVideoElement): Promise<MediaStream> {
+export async function iniciarCamaraDeFondo(
+  video: HTMLVideoElement,
+): Promise<MediaStream> {
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+    video: {
+      facingMode: { ideal: "environment" },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
     audio: false,
   });
   video.srcObject = stream;
@@ -12,12 +14,14 @@ export async function iniciarCamaraDeFondo(video: HTMLVideoElement): Promise<Med
   return stream;
 }
 
-export function detenerCamaraDeFondo(video: HTMLVideoElement, stream: MediaStream | null): void {
+export function detenerCamaraDeFondo(
+  video: HTMLVideoElement,
+  stream: MediaStream | null,
+): void {
   stream?.getTracks().forEach((pista) => pista.stop());
   video.srcObject = null;
 }
 
-                                                                                   
 export function describirErrorCamara(err: unknown): string {
   const nombre = err instanceof Error ? err.name : "";
   switch (nombre) {

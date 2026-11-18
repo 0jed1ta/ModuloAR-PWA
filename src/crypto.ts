@@ -1,41 +1,57 @@
-                                                                           
-                                                                            
-                                                                           
-                                                  
-
-export async function derivarClaveDesdeContrasena(contrasena: string, sal: Uint8Array): Promise<CryptoKey> {
+export async function derivarClaveDesdeContrasena(
+  contrasena: string,
+  sal: Uint8Array,
+): Promise<CryptoKey> {
   const materialBase = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(contrasena),
     "PBKDF2",
     false,
-    ["deriveKey"]
+    ["deriveKey"],
   );
 
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: sal as BufferSource, iterations: 100000, hash: "SHA-256" },
+    {
+      name: "PBKDF2",
+      salt: sal as BufferSource,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
     materialBase,
     { name: "AES-GCM", length: 256 },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 }
 
-export async function cifrarTexto(clave: CryptoKey, texto: string): Promise<{ cifrado: ArrayBuffer; iv: Uint8Array }> {
+export async function cifrarTexto(
+  clave: CryptoKey,
+  texto: string,
+): Promise<{ cifrado: ArrayBuffer; iv: Uint8Array }> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const datos = new TextEncoder().encode(texto);
-  const cifrado = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as BufferSource }, clave, datos);
+  const cifrado = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: iv as BufferSource },
+    clave,
+    datos,
+  );
   return { cifrado, iv };
 }
 
-export async function descifrarTexto(clave: CryptoKey, { cifrado, iv }: { cifrado: ArrayBuffer; iv: Uint8Array }): Promise<string> {
-  const datos = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv as BufferSource }, clave, cifrado);
+export async function descifrarTexto(
+  clave: CryptoKey,
+  { cifrado, iv }: { cifrado: ArrayBuffer; iv: Uint8Array },
+): Promise<string> {
+  const datos = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: iv as BufferSource },
+    clave,
+    cifrado,
+  );
   return new TextDecoder().decode(datos);
 }
 
 const CLAVE_SAL = "atlas3d-sal";
 
-                                                                                                    
 export function obtenerOCrearSal(): Uint8Array {
   const guardada = localStorage.getItem(CLAVE_SAL);
   if (guardada) {

@@ -1,16 +1,13 @@
-                                                                          
-                                                                             
-                                                                          
-                                                               
+export type EstadoPermiso =
+  | "granted"
+  | "denied"
+  | "no-necesario"
+  | "no-soportado";
 
-export type EstadoPermiso = "granted" | "denied" | "no-necesario" | "no-soportado";
-
-                                                                                  
 type EventoConPermiso = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<"granted" | "denied">;
 };
 
-                                                                  
 export async function pedirPermisoOrientacion(): Promise<EstadoPermiso> {
   if (!("DeviceOrientationEvent" in window)) return "no-soportado";
   const Evento = DeviceOrientationEvent as EventoConPermiso;
@@ -24,7 +21,6 @@ export async function pedirPermisoOrientacion(): Promise<EstadoPermiso> {
   return "no-necesario";
 }
 
-                                                                                          
 export function hayOrientacionReal(timeoutMs = 1000): Promise<boolean> {
   return new Promise((resolve) => {
     const alRecibir = (e: DeviceOrientationEvent) => {
@@ -46,22 +42,17 @@ export function hayOrientacionReal(timeoutMs = 1000): Promise<boolean> {
 }
 
 export interface ControlOrientacion {
-                                                                             
   calibrar(): void;
   detener(): void;
 }
 
 const GRADOS_A_RAD = Math.PI / 180;
-const limitar = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+const limitar = (v: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, v));
 
-   
-                                                                                     
-                                                                                   
-                                                            
-   
 export function iniciarControlOrientacion(
   onRotacion: (rotX: number, rotY: number) => void,
-  intervaloMs = 33
+  intervaloMs = 33,
 ): ControlOrientacion {
   let referencia: { beta: number; gamma: number } | null = null;
   let ultimaLectura: { beta: number; gamma: number } | null = null;
@@ -72,9 +63,9 @@ export function iniciarControlOrientacion(
     ultimaLectura = { beta: e.beta, gamma: e.gamma };
     if (!referencia) referencia = { ...ultimaLectura };
     const ahora = performance.now();
-    if (ahora - ultimoAviso < intervaloMs) return;                       
+    if (ahora - ultimoAviso < intervaloMs) return;
     ultimoAviso = ahora;
-                                                                                
+
     const dBeta = limitar(e.beta - referencia.beta, -90, 90);
     const dGamma = limitar(e.gamma - referencia.gamma, -90, 90);
     onRotacion(dBeta * GRADOS_A_RAD, dGamma * GRADOS_A_RAD);
@@ -84,7 +75,7 @@ export function iniciarControlOrientacion(
   return {
     calibrar() {
       referencia = ultimaLectura ? { ...ultimaLectura } : null;
-      onRotacion(0, 0);                                                                   
+      onRotacion(0, 0);
     },
     detener() {
       window.removeEventListener("deviceorientation", manejador);

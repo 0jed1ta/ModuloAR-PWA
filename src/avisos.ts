@@ -1,7 +1,3 @@
-                                                               
-                                                                           
-                                                                               
-
 import { BASE_URL } from "./base";
 
 export type EstadoAvisos = NotificationPermission | "no-soportado";
@@ -15,8 +11,12 @@ export async function pedirPermisoAvisos(): Promise<EstadoAvisos> {
   return Notification.requestPermission();
 }
 
-                                                                                          
-export async function mostrarAviso(titulo: string, cuerpo: string, url = BASE_URL, tag = "atlas-aviso"): Promise<boolean> {
+export async function mostrarAviso(
+  titulo: string,
+  cuerpo: string,
+  url = BASE_URL,
+  tag = "atlas-aviso",
+): Promise<boolean> {
   if (estadoAvisos() !== "granted") return false;
   const reg = await navigator.serviceWorker.ready;
   await reg.showNotification(titulo, {

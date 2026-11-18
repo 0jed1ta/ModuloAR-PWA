@@ -1,20 +1,14 @@
-                                                                     
-                                                                                          
-                                                                                      
-                                                                        
-
-                                                                                       
 interface EventoInstalacion extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
 export type EstadoInstalacion =
-  | "instalada"                                                 
-  | "recien-instalada"                                                                                      
-  | "instalable"                                                    
-  | "ios"                                                                  
-  | "no-disponible";                                                                              
+  | "instalada"
+  | "recien-instalada"
+  | "instalable"
+  | "ios"
+  | "no-disponible";
 
 let evento: EventoInstalacion | null = null;
 let rechazada = false;
@@ -35,16 +29,19 @@ export function posponerInstalacion(): void {
   avisar();
 }
 
-                                                       
 export function estaInstalada(): boolean {
-                                                                                                           
-  return window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
 }
 
-                                                                                                          
 export function esIOS(): boolean {
   const ua = navigator.userAgent;
-  return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  return (
+    /iPhone|iPad|iPod/.test(ua) ||
+    (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
+  );
 }
 
 export function estadoInstalacion(): EstadoInstalacion {
@@ -55,34 +52,31 @@ export function estadoInstalacion(): EstadoInstalacion {
   return "no-disponible";
 }
 
-                                                                                     
 export function instalacionRechazada(): boolean {
   return rechazada;
 }
 
-                                                                                                                             
 export function iniciarInstalacion(alCambiar: () => void): () => void {
   avisar = alCambiar;
   const alOfrecer = (e: Event) => {
-                                                                                                              
     e.preventDefault();
     evento = e as EventoInstalacion;
     rechazada = false;
     avisar();
   };
   const alInstalar = () => {
-    evento = null;               
+    evento = null;
     recienInstalada = true;
     avisar();
   };
-                                                                                                  
+
   const modo = window.matchMedia("(display-mode: standalone)");
   const alCambiarModo = () => avisar();
   window.addEventListener("beforeinstallprompt", alOfrecer);
   window.addEventListener("appinstalled", alInstalar);
   modo.addEventListener("change", alCambiarModo);
   avisar();
-                                                                            
+
   return () => {
     window.removeEventListener("beforeinstallprompt", alOfrecer);
     window.removeEventListener("appinstalled", alInstalar);
@@ -91,11 +85,12 @@ export function iniciarInstalacion(alCambiar: () => void): () => void {
   };
 }
 
-                                                                                              
-export async function pedirInstalacion(): Promise<"accepted" | "dismissed" | "no-disponible"> {
+export async function pedirInstalacion(): Promise<
+  "accepted" | "dismissed" | "no-disponible"
+> {
   if (!evento) return "no-disponible";
   const guardado = evento;
-  evento = null;                                                                                 
+  evento = null;
   await guardado.prompt();
   const { outcome } = await guardado.userChoice;
   rechazada = outcome === "dismissed";

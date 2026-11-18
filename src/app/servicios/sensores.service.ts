@@ -1,6 +1,10 @@
-                                                                                            
 import { DestroyRef, Injectable, inject, signal } from "@angular/core";
-import { hayOrientacionReal, iniciarControlOrientacion, pedirPermisoOrientacion, type ControlOrientacion } from "../../sensores";
+import {
+  hayOrientacionReal,
+  iniciarControlOrientacion,
+  pedirPermisoOrientacion,
+  type ControlOrientacion,
+} from "../../sensores";
 import { VisorService } from "./visor.service";
 
 @Injectable({ providedIn: "root" })
@@ -13,7 +17,6 @@ export class SensoresService {
   readonly lectura = signal("");
 
   constructor() {
-                                                                         
     inject(DestroyRef).onDestroy(() => {
       window.clearInterval(this.temporizador);
       this.control?.detener();
@@ -33,23 +36,27 @@ export class SensoresService {
     const visor = this.visorSvc.visor();
     if (!visor) return;
     if (this.control) {
-      this.apagar();                                          
+      this.apagar();
       return;
     }
     const permiso = await pedirPermisoOrientacion();
     if (permiso === "denied") {
-      this.visorSvc.aviso.set("Denegaste el acceso a los sensores. Sigue disponible el control con ratón o dedo.");
+      this.visorSvc.aviso.set(
+        "Denegaste el acceso a los sensores. Sigue disponible el control con ratón o dedo.",
+      );
       return;
     }
     if (permiso === "no-soportado" || !(await hayOrientacionReal())) {
-      this.visorSvc.aviso.set("Este dispositivo no tiene sensores de orientación. Usa el ratón o el dedo para girar el visor.");
+      this.visorSvc.aviso.set(
+        "Este dispositivo no tiene sensores de orientación. Usa el ratón o el dedo para girar el visor.",
+      );
       return;
     }
     this.visorSvc.aviso.set("");
     visor.controlPorSensores(true);
     this.control = iniciarControlOrientacion((x, y) => visor.rotarHacia(x, y));
     this.activo.set(true);
-                                                                                           
+
     this.temporizador = window.setInterval(() => {
       const { x, y } = visor.rotacionActualGrados();
       this.lectura.set(`rotación X ${x}° · Y ${y}°`);

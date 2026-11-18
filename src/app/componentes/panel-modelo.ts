@@ -1,6 +1,3 @@
-                                                                                            
-                                                                                          
-                                                                             
 import { Component, computed, inject } from "@angular/core";
 import { CATALOGO } from "../../modelos";
 import { ROLES, type DefinicionModelo } from "../../modelos/tipos";
@@ -16,14 +13,18 @@ export class PanelModelo {
   protected readonly catalogo = CATALOGO;
   protected readonly ROLES = ROLES;
 
-  protected readonly roles = computed(() => [...new Set(this.panel.def().piezas.map((p) => p.rol))]);
+  protected readonly roles = computed(() => [
+    ...new Set(this.panel.def().piezas.map((p) => p.rol)),
+  ]);
   protected readonly extra = computed(() => {
     const p = this.panel.pieza();
     return p ? this.panel.ficha()?.piezas[p.id] : undefined;
   });
 
   protected nombresDe(def: DefinicionModelo, ids: string[]): string {
-    return ids.map((x) => def.piezas.find((p) => p.id === x)?.nombre ?? x).join(", ");
+    return ids
+      .map((x) => def.piezas.find((p) => p.id === x)?.nombre ?? x)
+      .join(", ");
   }
 
   protected alElegirPieza(id: string): void {

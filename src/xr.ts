@@ -1,15 +1,13 @@
-                                                           
-                                                                                      
-                                                                                     
-                                                                                  
-                                                                                  
-                                     
+export type SoporteAR =
+  | "disponible"
+  | "contexto-inseguro"
+  | "sin-webxr"
+  | "sin-ar";
 
-                                                     
-export type SoporteAR = "disponible" | "contexto-inseguro" | "sin-webxr" | "sin-ar";
-
-                                                                                                 
-export async function diagnosticarAR(): Promise<{ estado: SoporteAR; lineas: string[] }> {
+export async function diagnosticarAR(): Promise<{
+  estado: SoporteAR;
+  lineas: string[];
+}> {
   const lineas: string[] = [];
   const seguro = window.isSecureContext;
   lineas.push(`Contexto seguro (HTTPS o localhost): ${seguro ? "sí" : "NO"}`);
@@ -19,12 +17,13 @@ export async function diagnosticarAR(): Promise<{ estado: SoporteAR; lineas: str
   if (!navigator.xr) return { estado: "sin-webxr", lineas };
 
   try {
-    // Responde si el DISPOSITIVO puede abrir ese modo; no pide permiso ni abre nada.
     const ok = await navigator.xr.isSessionSupported("immersive-ar");
     lineas.push(`isSessionSupported("immersive-ar"): ${ok}`);
     return { estado: ok ? "disponible" : "sin-ar", lineas };
   } catch (err) {
-    lineas.push(`isSessionSupported("immersive-ar") lanzó: ${err instanceof Error ? err.name : String(err)}`);
+    lineas.push(
+      `isSessionSupported("immersive-ar") lanzó: ${err instanceof Error ? err.name : String(err)}`,
+    );
     return { estado: "sin-ar", lineas };
   }
 }
@@ -46,19 +45,12 @@ export function mensajeSoporteAR(estado: SoporteAR): string {
   }
 }
 
-/**
- * Pide la sesión AR. DEBE llamarse desde el manejador de un clic: sin gesto del
- * usuario, el navegador la rechaza con SecurityError.
- *
- * Primer intento: `hit-test` como función REQUERIDA. Con ella opcional, Chrome en Android
- * concedía la función y creaba la fuente, pero nunca entregaba una superficie; como requerida,
- * el anillo sale. Si el dispositivo no la ofrece (NotSupportedError), se reintenta con todo
- * opcional: la sesión se abre igual y la app usa su plan B.
- */
-export async function pedirSesionAR(overlay: HTMLElement | null): Promise<XRSession> {
+export async function pedirSesionAR(
+  overlay: HTMLElement | null,
+): Promise<XRSession> {
   const abrir = (requeridas: string[], opcionales: string[]) => {
     const opciones: XRSessionInit & { domOverlay?: { root: Element } } = {
-      requiredFeatures: requeridas, // «local»: el origen (0,0,0) es donde está el usuario al empezar
+      requiredFeatures: requeridas,
       optionalFeatures: opcionales,
     };
     if (overlay) opciones.domOverlay = { root: overlay };
@@ -72,24 +64,27 @@ export async function pedirSesionAR(overlay: HTMLElement | null): Promise<XRSess
   }
 }
 
-/** Qué funciones opcionales concedió de verdad el navegador en esta sesión. */
 export interface CapacidadesAR {
-  overlay: boolean; // dom-overlay: botones HTML y gestos de dedos sobre la cámara
-  hitTest: boolean; // hit-test: preguntar «¿dónde está la superficie en esta dirección?»
-  anclas: boolean; // anchors: fijar un punto del mundo real y que el sistema lo siga corrigiendo
+  overlay: boolean;
+  hitTest: boolean;
+  anclas: boolean;
 }
 
-/**
- * Pedir una función no garantiza recibirla. `enabledFeatures` lista las concedidas;
- * si el navegador aún no la ofrece, se mira si existen las funciones de la API.
- */
 export function capacidadesDe(sesion: XRSession): CapacidadesAR {
-  const concedidas = (sesion as XRSession & { enabledFeatures?: string[] }).enabledFeatures;
-  const tiene = (nombre: string, respaldo: boolean) => (Array.isArray(concedidas) ? concedidas.includes(nombre) : respaldo);
+  const concedidas = (sesion as XRSession & { enabledFeatures?: string[] })
+    .enabledFeatures;
+  const tiene = (nombre: string, respaldo: boolean) =>
+    Array.isArray(concedidas) ? concedidas.includes(nombre) : respaldo;
   return {
     overlay: Boolean(sesion.domOverlayState),
-    hitTest: tiene("hit-test", typeof sesion.requestHitTestSource === "function"),
-    anclas: tiene("anchors", typeof XRFrame !== "undefined" && "createAnchor" in XRFrame.prototype),
+    hitTest: tiene(
+      "hit-test",
+      typeof sesion.requestHitTestSource === "function",
+    ),
+    anclas: tiene(
+      "anchors",
+      typeof XRFrame !== "undefined" && "createAnchor" in XRFrame.prototype,
+    ),
   };
 }
 

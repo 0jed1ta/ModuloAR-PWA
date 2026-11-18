@@ -1,8 +1,10 @@
-                                                                                                      
-                                                                                           
-                                                                                                     
-                                                                                                             
-import { Component, ElementRef, afterNextRender, inject, viewChild } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  afterNextRender,
+  inject,
+  viewChild,
+} from "@angular/core";
 import { PanelModelo } from "./panel-modelo";
 import { VisorService } from "../servicios/visor.service";
 import { SensoresService } from "../servicios/sensores.service";
@@ -21,11 +23,12 @@ export class ZonaVisor {
   protected readonly camara = inject(CamaraService);
   protected readonly ar = inject(ARService);
 
-  private readonly contenedor = viewChild.required<ElementRef<HTMLDivElement>>("contenedor");
-  private readonly video = viewChild.required<ElementRef<HTMLVideoElement>>("video");
+  private readonly contenedor =
+    viewChild.required<ElementRef<HTMLDivElement>>("contenedor");
+  private readonly video =
+    viewChild.required<ElementRef<HTMLVideoElement>>("video");
 
   constructor() {
-                                                                                              
     afterNextRender(() => {
       this.camara.registrarVideo(this.video().nativeElement);
       this.visorSvc.montar(this.contenedor().nativeElement);

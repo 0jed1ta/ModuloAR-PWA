@@ -1,4 +1,3 @@
-                                                                                                     
 import { Component, inject, signal } from "@angular/core";
 import { InstalacionService } from "../servicios/instalacion.service";
 
@@ -14,7 +13,7 @@ export class ZonaInstalar {
   protected async alPulsar(): Promise<void> {
     this.pidiendo.set(true);
     try {
-      await this.inst.pedir();                                                                   
+      await this.inst.pedir();
     } finally {
       this.pidiendo.set(false);
     }

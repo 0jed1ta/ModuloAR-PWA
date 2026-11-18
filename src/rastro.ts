@@ -1,17 +1,10 @@
-                                                                                
-                                                                                        
-                                                                                         
-                                                                                     
-                                                      
 const CLAVE = "atlas3d-rastro-ar";
 export const PASO_FINAL = "fin-ok";
 
 export function anotar(paso: string): void {
   try {
     localStorage.setItem(CLAVE, `${paso}|${Date.now()}`);
-  } catch {
-    /* sin almacenamiento (modo privado): el rastro es opcional */
-  }
+  } catch {}
 }
 
 export function leerRastro(): { paso: string; hace: number } | null {
@@ -25,10 +18,10 @@ export function leerRastro(): { paso: string; hace: number } | null {
   }
 }
 
-/** Texto para el diagnóstico: vacío si todo terminó bien o nunca se usó AR. */
 export function describirRastro(): string {
   const r = leerRastro();
   if (!r) return "Última sesión de AR: sin registro.";
-  if (r.paso === PASO_FINAL) return `Última sesión de AR: terminó completa (hace ${r.hace} s).`;
+  if (r.paso === PASO_FINAL)
+    return `Última sesión de AR: terminó completa (hace ${r.hace} s).`;
   return `Última sesión de AR: se interrumpió en el paso «${r.paso}» (hace ${r.hace} s).`;
 }

@@ -1,6 +1,9 @@
 {
   "name": "pwa-ar-objetos3d",
   "version": "0.0.0",
+  "engines": {
+    "node": ">=22.22.3 <23 || >=24.15.0 <25"
+  },
   "scripts": {
     "start": "ng serve",
     "dev": "ng serve",

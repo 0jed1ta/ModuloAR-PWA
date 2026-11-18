@@ -1,16 +1,22 @@
-                                                                                                     
-                                                                                              
-                                                                                                   
 import { Injectable, signal } from "@angular/core";
 import {
-  abrirBaseDeDatos, alternarFavorito, guardarNotaDeEstudio, marcarModeloVisto,
-  obtenerDescargas, obtenerTodoElProgreso, type ProgresoModelo,
+  abrirBaseDeDatos,
+  alternarFavorito,
+  guardarNotaDeEstudio,
+  marcarModeloVisto,
+  obtenerDescargas,
+  obtenerTodoElProgreso,
+  type ProgresoModelo,
 } from "../../db";
-import { cifrarTexto, derivarClaveDesdeContrasena, descifrarTexto, obtenerOCrearSal } from "../../crypto";
+import {
+  cifrarTexto,
+  derivarClaveDesdeContrasena,
+  descifrarTexto,
+  obtenerOCrearSal,
+} from "../../crypto";
 
 @Injectable({ providedIn: "root" })
 export class ProgresoService {
-                                                                                                     
   readonly dbPromesa: Promise<IDBDatabase> = abrirBaseDeDatos();
   private claveSesion: CryptoKey | null = null;
 
@@ -23,16 +29,28 @@ export class ProgresoService {
 
   async recargar(): Promise<void> {
     const db = await this.dbPromesa;
-    const [todo, descargas] = await Promise.all([obtenerTodoElProgreso(db), obtenerDescargas(db)]);
+    const [todo, descargas] = await Promise.all([
+      obtenerTodoElProgreso(db),
+      obtenerDescargas(db),
+    ]);
     this.progreso.set(new Map(todo.map((p) => [p.modeloId, p])));
-    this.descargados.set(new Set(descargas.filter((d) => d.estado === "listo").map((d) => d.modeloId)));
+    this.descargados.set(
+      new Set(
+        descargas.filter((d) => d.estado === "listo").map((d) => d.modeloId),
+      ),
+    );
   }
 
   private async obtenerClave(): Promise<CryptoKey | null> {
     if (this.claveSesion) return this.claveSesion;
-    const contrasena = window.prompt("Contraseña para cifrar/descifrar la nota de estudio (la misma cada vez — no se guarda en ningún lado):");
+    const contrasena = window.prompt(
+      "Contraseña para cifrar/descifrar la nota de estudio (la misma cada vez — no se guarda en ningún lado):",
+    );
     if (!contrasena) return null;
-    this.claveSesion = await derivarClaveDesdeContrasena(contrasena, obtenerOCrearSal());
+    this.claveSesion = await derivarClaveDesdeContrasena(
+      contrasena,
+      obtenerOCrearSal(),
+    );
     return this.claveSesion;
   }
 
@@ -49,7 +67,13 @@ export class ProgresoService {
   async guardarNota(id: string, texto: string): Promise<boolean> {
     const clave = await this.obtenerClave();
     if (!clave) return false;
-    await guardarNotaDeEstudio(await this.dbPromesa, clave, id, texto, cifrarTexto);
+    await guardarNotaDeEstudio(
+      await this.dbPromesa,
+      clave,
+      id,
+      texto,
+      cifrarTexto,
+    );
     await this.recargar();
     return true;
   }
@@ -60,10 +84,15 @@ export class ProgresoService {
     const clave = await this.obtenerClave();
     if (!clave) return;
     try {
-      const texto = await descifrarTexto(clave, { cifrado: p.notaCifrada, iv: p.notaIv });
+      const texto = await descifrarTexto(clave, {
+        cifrado: p.notaCifrada,
+        iv: p.notaIv,
+      });
       window.alert(`Nota de estudio de "${id}":\n\n${texto}`);
     } catch {
-      window.alert("No se pudo descifrar — la contraseña ingresada no es la correcta.");
+      window.alert(
+        "No se pudo descifrar — la contraseña ingresada no es la correcta.",
+      );
     }
   }
 }

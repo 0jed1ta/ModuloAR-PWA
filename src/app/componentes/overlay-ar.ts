@@ -1,6 +1,3 @@
-                                                                                       
-                                                                                             
-                                                                                         
 import { Component, ElementRef, computed, inject } from "@angular/core";
 import { ARService } from "../servicios/ar.service";
 import { PanelService } from "../servicios/panel.service";
@@ -17,11 +14,14 @@ export class OverlayAR {
   protected readonly textoPieza = computed(() => {
     const pieza = this.panel.pieza();
     const extra = pieza ? this.panel.ficha()?.piezas[pieza.id] : null;
-    return pieza ? `${pieza.nombre}: ${extra ? extra.responsabilidad : pieza.resumen}` : `${this.panel.def().nombre}. Usa ◀ ▶ para recorrer sus piezas.`;
+    return pieza
+      ? `${pieza.nombre}: ${extra ? extra.responsabilidad : pieza.resumen}`
+      : `${this.panel.def().nombre}. Usa ◀ ▶ para recorrer sus piezas.`;
   });
 
   constructor() {
-    // El elemento ya existe: se le entrega al servicio, que lo pasará a WebXR como dom-overlay.
-    this.ar.registrarOverlay(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+    this.ar.registrarOverlay(
+      inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+    );
   }
 }

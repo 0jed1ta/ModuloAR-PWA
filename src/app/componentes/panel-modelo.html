@@ -4,10 +4,11 @@
   role="group"
   aria-label="Elegir modelo"
 >
-  @for (m of catalogo.slice(0, 3); track m.id) {
+  @for (m of catalogo; track m.id) {
   <button
     type="button"
     class="tab"
+    [attr.id]="m.id === 'hexagonal' ? 'btn-modelo-hexagonal' : null"
     [attr.data-id]="m.id"
     [attr.aria-pressed]="m.id === panel.def().id"
     (click)="panel.elegirModelo(m.id)"
@@ -15,20 +16,6 @@
     {{ m.nombre }}
   </button>
   }
-</div>
-<div
-  class="modelo-adicional"
-  aria-label="Modelo adicional de la actividad de la Sesión 40"
->
-  <button
-    type="button"
-    id="btn-modelo-hexagonal"
-    class="tab"
-    [attr.aria-pressed]="panel.def().id === 'hexagonal'"
-    (click)="panel.elegirModelo('hexagonal')"
-  >
-    Modelo adicional: Puertos y adaptadores
-  </button>
 </div>
 <p id="modelo-resumen" class="modelo-resumen">{{ panel.def().resumen }}</p>
 <div id="leyenda" class="leyenda" aria-label="Leyenda de colores">
